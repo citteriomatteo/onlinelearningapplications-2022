@@ -1,4 +1,4 @@
-# onlinelearningapplications-2022
+# Online Learning Applications - 2022
 Imagine an ecommerce website which can sell an unlimited number of units of 5 different items without any storage cost.
 In every webpage, a single product, called primary, is displayed together with its price. The user can add a number of units of this product to the cart. After the product has been added to the cart, two products, called secondary, are recommended. When displaying the secondary products, the price is hidden. Furthermore, the products are recommended in two slots, one above the other, thus providing more importance to the product displayed in the slot above. If the user clicks on a secondary product, a new tab on the browser is opened and, in the loaded webpage, the clicked product is displayed as primary together with its price. At the end of the visit over the ecommerce website, the user buys the products added to the cart.
 We assume that the user has the following behavior:
