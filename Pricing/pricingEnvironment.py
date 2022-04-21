@@ -3,7 +3,7 @@ from user_data_generator import StandardDataGenerator
 
 
 class Environment:
-    def __init__(self, n_arms, probabilities, resources="Pricing/user_data_generator.py"):
+    def __init__(self, n_arms, probabilities, resources="../json/dataUsers.json"):
         self.n_arms = n_arms
         self.probabilities = probabilities
 
