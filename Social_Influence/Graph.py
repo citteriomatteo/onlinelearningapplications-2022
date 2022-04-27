@@ -24,7 +24,7 @@ class Graph:
             data = json.load(f)
 
         for name in data["nodes"]:
-            self.nodes.append(Product(name=name["type"]))
+            self.nodes.append(Product(name=name["type"], price=0))  # price is fixed for now, waiting for pricing part
 
         for edge in data["edges"]:
             node1 = self.search_product(edge["node1"])
