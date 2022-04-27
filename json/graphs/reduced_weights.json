@@ -1,0 +1,82 @@
+{
+	"nodes": [
+		{
+			"type": "P1"
+		},
+		{
+			"type": "P2"
+		},
+		{
+			"type": "P3"
+		},
+		{
+			"type": "P4"
+		},
+		{
+			"type": "P5"
+		}
+	],
+	
+	"edges": [
+		{
+			"node1": "P1",
+			"node2": "P3",
+			"probability": "0.332"
+		},
+		{
+			"node1": "P1",
+			"node2": "P4",
+			"probability": "0.174"
+		},
+		{
+			"node1": "P2",
+			"node2": "P1",
+			"probability": "0.455"
+		},
+		{
+			"node1": "P2",
+			"node2": "P4",
+			"probability": "0.119"
+		},
+		{
+			"node1": "P2",
+			"node2": "P5",
+			"probability": "0.517"
+		},
+		{
+			"node1": "P3",
+			"node2": "P1",
+			"probability": "0.430"
+		},
+		{
+			"node1": "P3",
+			"node2": "P5",
+			"probability": "0.138"
+		},
+		{
+			"node1": "P4",
+			"node2": "P2",
+			"probability": "0.109"
+		},
+		{
+			"node1": "P4",
+			"node2": "P3",
+			"probability": "0.435"
+		},
+		{
+			"node1": "P4",
+			"node2": "P5",
+			"probability": "0.918"
+		},
+		{
+			"node1": "P5",
+			"node2": "P1",
+			"probability": "0.290"
+		},
+		{
+			"node1": "P5",
+			"node2": "P2",
+			"probability": "0.341"
+		}
+	] 
+}

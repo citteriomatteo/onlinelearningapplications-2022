@@ -9,12 +9,16 @@ class Graph:
     nodes = []
     edges = []
 
-    def __init__(self, param):
+    def __init__(self, mode, weights):
 
-        if param:
-            path = "../json/full.json"
+        if mode == "reduced":
+            path = "../json/graphs/reduced"
         else:
-            path = "../json/reduced.json"
+            path = "../json/graphs/full"
+        if weights:
+            path += "_weights.json"
+        else:
+            path += "_noweights.json"
 
         with open(path, 'r') as f:
             data = json.load(f)
@@ -25,7 +29,10 @@ class Graph:
         for edge in data["edges"]:
             node1 = self.search_product(edge["node1"])
             node2 = self.search_product(edge["node2"])
-            self.edges.append(Edge(node1, node2))
+            if not weights:
+                self.edges.append(Edge(node1=node1, node2=node2))
+            else:
+                self.edges.append(Edge(node1=node1, node2=node2, probability=edge["probability"]))
 
     def search_product(self, name):
         for n in self.nodes:
@@ -38,11 +45,15 @@ class Graph:
             print(edge.node2.name)
             print(edge.probability)
 
+
 """
-graph = Graph(True)
-env = SIEnvironment(graph)
+
+graph = Graph(mode="full", weights=True)
+env = SIEnvironment(graph=graph, randomize=False)
 
 print(env.opt())
 
 graph.print_all()
+
 """
+

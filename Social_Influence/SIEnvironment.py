@@ -21,14 +21,14 @@ class SIEnvironment:
 
     """
 
-    def __init__(self, graph):
+    def __init__(self, graph, randomize):
         self.graph = graph
         self.theta = np.random.dirichlet(np.ones(len(self.graph.nodes)), size=1)
         self.arms_features = np.random.binomial(1, 0.5, size=(len(self.graph.edges), len(self.graph.nodes)))
         self.lam = Settings.lam
-
-        for i in range(0, len(self.graph.edges)):
-            self.graph.edges[i].probability = np.dot(self.theta, self.arms_features[i])
+        if randomize:
+            for i in range(0, len(self.graph.edges)):
+                self.graph.edges[i].probability = np.dot(self.theta, self.arms_features[i])
 
     def round(self, pulled_arm):
         return 1 if np.random.random() < self.graph.edges[pulled_arm].probability else 0
