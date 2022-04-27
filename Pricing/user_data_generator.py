@@ -13,8 +13,11 @@ class StandardDataGenerator:
         self._features = self._data['features']
         # classes
         self._classes = {}
-        # class distributions
-        # self._class_distribution = []
+        # demand curve
+        self._demand_curve = self._data['demand_curve']
+        # prices
+        self._prices = self._data['prices']
+
         for key in self._data['classes']:
             self._classes[key] = {}
             self._classes[key]['features'] = self._data['classes'][key]['features']
@@ -47,4 +50,10 @@ class StandardDataGenerator:
 
     def get_num_product_sold(self):
         return self._num_product_sold
+
+    def get_demand_curve(self):
+        return self._demand_curve
+
+    def get_prices(self):
+        return self._prices
 
