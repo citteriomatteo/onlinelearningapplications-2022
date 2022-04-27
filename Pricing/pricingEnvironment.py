@@ -26,11 +26,16 @@ class PricingEnvironment:
         for i in range(0, len(self.graph.edges)):
             self.graph.edges[i].probability = np.dot(self.theta, self.arms_features[i])
 
-
     def round(self, pulled_arm):
-        return np.random.binomial(1, self.probabilities[pulled_arm])
+        distributions = [0 for i in range(len(pulled_arm))]
+        for prod in range(len(pulled_arm)):
+            #print(prod)
+            #print(pulled_arm[prod])
+            distributions[prod] = np.random.binomial(1, self.demand_curve[0][prod][pulled_arm[prod]])
+            #distributions.append(np.random.binomial(1, self.probabilities[arm]))
+        return distributions
 
 
 graph = Graph(mode="full", weights=True)
 env = PricingEnvironment(4, graph, 1)
-
+print(env.prices[0].shape)

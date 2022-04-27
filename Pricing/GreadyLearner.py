@@ -27,7 +27,9 @@ class Greedy_Learner(Learner):
                 new_arms[i] += 1
                 revenues[i] = self.revenue_given_arms(new_arms)
 
+        #print('revenues ',revenues)
         price_index_increased = revenues.index(max(revenues))
+        #print('index ', price_index_increased)
         return_arms = self.max_idxs.copy()
         return_arms[price_index_increased] += 1
         return return_arms, revenues[price_index_increased]

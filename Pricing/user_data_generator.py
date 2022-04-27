@@ -1,10 +1,10 @@
 import json
+import numpy as np
 
 
 class StandardDataGenerator:
 
     def __init__(self, filename):
-
         self._filename = filename
         self._data = None
         with open(self._filename) as f:
@@ -16,7 +16,8 @@ class StandardDataGenerator:
         # demand curve
         self._demand_curve = self._data['demand_curve']
         # prices
-        self._prices = self._data['prices']
+        #self._prices = self._data['prices']
+        self._prices = np.array(self._data['prices'])
 
         for key in self._data['classes']:
             self._classes[key] = {}
@@ -56,4 +57,3 @@ class StandardDataGenerator:
 
     def get_prices(self):
         return self._prices
-
