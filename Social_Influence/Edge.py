@@ -13,3 +13,12 @@ class Edge:
 
     def set_probability(self, probability):
         self.probability = probability
+
+    def getNode1(self):
+        return self.node1
+
+    def getNode2(self):
+        return self.node2
+
+    def getProbability(self):
+        return self.probability
