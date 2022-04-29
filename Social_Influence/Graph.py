@@ -39,6 +39,30 @@ class Graph:
             if n.name == name:
                 return n
 
+    # searching the first and second nodes connected to "primary" with the highest probability
+    def get_secondary_products(self, primary, products_state):
+
+        first_prob = 0
+        second_prob = 0
+        first = None
+        second = None
+
+        for e in self.edges:
+            if e.node1 == primary and products_state[e.node2.sequence_number] == 0:
+                if e.probability > first_prob:
+                    # the old "first" becomes now "second"
+                    second_prob = first_prob
+                    second = first
+                    # saving the new "first"
+                    first_prob = e.probability
+                    first = e.node2
+                else:
+                    if e.probability > second_prob:
+                        second_prob = e.probability
+                        second = e.node2
+
+        return [[first, first_prob], [second, second_prob]]
+
     def print_all(self):
         for edge in self.edges:
             print(edge.node1.name)
@@ -56,4 +80,3 @@ print(env.opt())
 graph.print_all()
 
 """
-
