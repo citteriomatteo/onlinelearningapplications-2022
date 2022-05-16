@@ -10,12 +10,11 @@ class Customer:
 
     products_state = []
     cart = []
-    pages = []
 
-    def __init__(self, reservation_price, num_products, firstPage):
+    def __init__(self, reservation_price, num_products, learner):
         self.reservation_price = reservation_price
         self.products_state = np.zeros(shape=num_products)
-        self.pages.append(firstPage)
+        self.learner = learner
 
     def set_susceptible(self, prod_number):
         self.products_state[prod_number] = 0
@@ -23,28 +22,35 @@ class Customer:
     def set_active(self, prod_number):
         if self.products_state[prod_number] == 0:
             self.products_state[prod_number] = 1
+            return True
+
+        return False
 
     def set_inactive(self, prod_number):
         if self.products_state[prod_number] == 1:
             self.products_state[prod_number] = -1
+            return True
+
+        return False
 
     def add_product(self, product, quantity):
         if quantity > 0:
             for i in range(quantity):
                 self.cart.append(product)
 
-    def click_on(self, new_page):
-        self.set_active(prod_number=new_page.first.sequence_number)
-
-        # ------- here we should update weights -------
+    def click_on(self, first, second):
+        if self.set_active(prod_number=second.sequence_number):
+            self.learner.update_estimation(first=first, reward=1)
 
         """
-        ASSUMPTION: if the same product is clicked (to be set as primary) on multiple parallel pages, the same 
-        result will be displayed -> no new page is created
+        ASSUMPTION: if the same product is clicked (to be set as primary) on multiple parallel pages, nothing happens
         """
 
-        if self.products_state[new_page.first.sequence_number] == 0:
-            self.pages.append(new_page)
-
-    def close_page(self, product):
-        self.set_inactive(prod_number=product.sequence_number)
+    def close_page(self, first, second, third):
+        self.set_inactive(prod_number=first.sequence_number)
+        """We put reward = 0 for the nodes that have been visualized but not clicked on. 
+        (still susceptible on close) """
+        if self.products_state[second.sequence_number] == 0:
+            self.learner.update_estimation(first=first, second=second, reward=0)
+        if self.products_state[third.sequence_number] == 0:
+            self.learner.update_estimation(first=first, second=third, reward=0)

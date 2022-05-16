@@ -31,15 +31,11 @@ class Learner:
         second = np.argmax(ucbs)
         return self.graph.nodes[first], self.graph.nodes[second]
 
-    def update_estimation(self, arm_idx, reward):
-        arm = np.atleast_2d(self.arms[arm_idx]).T
+    def update_estimation(self, first, reward):
+        arm = np.atleast_2d(self.arms[first]).T
         self.M += np.dot(arm, arm.T)
         self.b += reward * arm
 
-    def update(self, arm_idx, reward):
-        self.pulled_arms.append(arm_idx)
-        self.collected_rewards.append(reward)
-        self.update_estimation(arm_idx, reward)
 
 
 

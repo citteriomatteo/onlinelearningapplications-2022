@@ -4,7 +4,6 @@ import numpy as np
 
 from Social_Influence.Edge import Edge
 from Social_Influence.Learner import Learner
-from Social_Influence.LearnerEdge import LearnerEdge
 from Social_Influence.Product import Product
 from Social_Influence.SIEnvironment import SIEnvironment
 
@@ -33,19 +32,22 @@ class Graph:
             i += 1
 
         for edge in data["edges"]:
-            node1 = self.search_product(edge["node1"])
-            node2 = self.search_product(edge["node2"])
+            node1 = self.search_product_by_name(edge["node1"])
+            node2 = self.search_product_by_name(edge["node2"])
             if not weights:
-                self.edges.append(LearnerEdge(node1=node1, node2=node2))
+                self.edges.append(Edge(node1=node1, node2=node2))
             else:
-                self.edges.append(LearnerEdge(node1=node1, node2=node2, probability=edge["probability"]))
+                self.edges.append(Edge(node1=node1, node2=node2, probability=edge["probability"]))
 
-        for edge in self.edges:
-            edge.setFeatures(np.random.binomial(1, 0.5, size=(len(self.edges))))
 
-    def search_product(self, name):
+    def search_product_by_name(self, name):
         for n in self.nodes:
             if n.name == name:
+                return n
+
+    def search_product_by_number(self, number):
+        for n in self.nodes:
+            if n.sequence_number == number:
                 return n
 
     # searching the first and second nodes connected to "primary" with the highest probability
@@ -70,7 +72,7 @@ class Graph:
                         second_prob = e.getProbability()
                         second = e.getNode2()
 
-        return [[first, first_prob], [second, second_prob]]
+        return first, second
 
     def print_all(self):
         for edge in self.edges:
