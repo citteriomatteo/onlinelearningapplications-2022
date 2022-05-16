@@ -3,7 +3,6 @@ import json
 import numpy as np
 
 from Social_Influence.Edge import Edge
-from Social_Influence.Learner import Learner
 from Social_Influence.Product import Product
 from Social_Influence.SIEnvironment import SIEnvironment
 
@@ -13,6 +12,23 @@ class Graph:
     edges = []
 
     def __init__(self, mode, weights):
+        """
+
+        :param mode: The type of graph (reduced or full)
+        :type mode: string
+        :param weights: The choice of loading probabilities from the file or not
+        :type weights: boolean
+        :param nodes: The set of nodes in the graph
+        :type nodes: Product
+        :param edges: The set of edges
+        :type edges: Edge
+        :param M: The matrix used for exploit the upper confidence bound
+        :type M: matrix of float
+        :param c: Exploration coefficient
+        :type c:
+        :param b:
+        :type b:
+        """
 
         if mode == "reduced":
             path = "../json/graphs/reduced"
@@ -28,58 +44,99 @@ class Graph:
 
         i = 0
         for name in data["nodes"]:
-            self.nodes.append(Product(name=name["type"], price=0, sequence_number=i))  # price is fixed for now, waiting for pricing part
+            self.nodes.append(Product(name=name["type"], price=0,
+                                      sequence_number=i))  # price is fixed for now, waiting for pricing part
             i += 1
+
+        x = np.zeros(shape=(len(self.nodes), len(self.nodes)))
 
         for edge in data["edges"]:
             node1 = self.search_product_by_name(edge["node1"])
             node2 = self.search_product_by_name(edge["node2"])
+            x[node1.sequence_number, node2.sequence_number] = 1
             if not weights:
                 self.edges.append(Edge(node1=node1, node2=node2))
             else:
                 self.edges.append(Edge(node1=node1, node2=node2, probability=edge["probability"]))
 
+        for node in self.nodes:
+            node.set_x(x[node.sequence_number, :])
+
+        self.c = 2.0
+        self.M = np.identity(len(self.nodes))
+        self.b = np.atleast_2d(np.zeros(len(self.nodes))).T
 
     def search_product_by_name(self, name):
         for n in self.nodes:
             if n.name == name:
                 return n
+        return None
 
     def search_product_by_number(self, number):
         for n in self.nodes:
             if n.sequence_number == number:
                 return n
+        return None
 
-    # searching the first and second nodes connected to "primary" with the highest probability
-    def get_secondary_products(self, primary, products_state):
+    def search_edge_by_nodes(self, node1, node2):
+        for edge in self.edges:
+            if edge.node1 == node1 and edge.node2 == node2:
+                return edge
+        return None
 
-        first_prob = 0
-        second_prob = 0
-        first = None
-        second = None
+    def compute_ucbs(self, primary, products_state):
+        theta = np.dot(np.linalg.inv(self.M), self.b)
+        ucbs = []
+        for i in range(len(self.nodes)):
+            if products_state[self.nodes[i].sequence_number] == 0 and primary.x[i] == 1:
+                x = np.atleast_2d(self.nodes[i].x).T
+                ucb = np.dot(theta.T, x) + self.c * np.sqrt(np.dot(x.T, np.dot(np.linalg.inv(self.M), x)))
+                ucbs.append(ucb[0][0])
+            else:
+                ucbs.append(-1)
+        return ucbs
 
-        for e in self.edges:
-            if e.getNode1() == primary and products_state[e.getNode2().sequence_number] == 0:
-                if e.getProbability() > first_prob:
-                    # the old "first" becomes now "second"
-                    second_prob = first_prob
-                    second = first
-                    # saving the new "first"
-                    first_prob = e.getProbability()
-                    first = e.getNode2()
-                else:
-                    if e.getProbability() > second_prob:
-                        second_prob = e.getProbability()
-                        second = e.getNode2()
+    def compute_ucbs_complete(self, products_state):
+        theta = np.dot(np.linalg.inv(self.M), self.b)
+        ucbs = []
+        for node in self.nodes:
+            x = np.atleast_2d(node.x).T
+            ucb = np.dot(theta.T, x) + self.c * np.sqrt(np.dot(x.T, np.dot(np.linalg.inv(self.M), x)))
+            ucbs.append(ucb[0][0])
 
-        return first, second
+        return ucbs
+
+    def pull_arms(self, node1, products_state):
+        ucbs = self.compute_ucbs(primary=node1, products_state=products_state)
+        first = np.argmax(ucbs)
+        ucbs[first] = -1
+        second = np.argmax(ucbs)
+        first_node = None
+        second_node = None
+        p1 = 0
+        p2 = 0
+
+        if first != -1:
+            first_node = self.nodes[first]
+            e = self.search_edge_by_nodes(node1=node1, node2=first_node)
+            if e is not None:
+                p1 = e.probability
+
+        if second != -1:
+            second_node = self.nodes[second]
+            e = self.search_edge_by_nodes(node1=node1, node2=second_node)
+            if e is not None:
+                p2 = e.probability
+
+        return first_node, second_node, p1, p2
+
+    def update_estimation(self, node, reward):
+        x = np.atleast_2d(node.x).T
+        self.M += np.dot(x, x.T)
+        self.b += reward * x
 
     def print_all(self):
         for edge in self.edges:
             print(edge.getNode1().name)
             print(edge.getNode2().name)
             print(edge.getProbability())
-
-
-
-

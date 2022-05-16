@@ -21,12 +21,12 @@
 		{
 			"node1": "P1",
 			"node2": "P3",
-			"probability": "0.332"
+			"probability": "0.532"
 		},
 		{
 			"node1": "P1",
 			"node2": "P4",
-			"probability": "0.174"
+			"probability": "0.374"
 		},
 		{
 			"node1": "P2",

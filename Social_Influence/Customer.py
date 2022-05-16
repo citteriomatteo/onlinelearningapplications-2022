@@ -11,10 +11,10 @@ class Customer:
     products_state = []
     cart = []
 
-    def __init__(self, reservation_price, num_products, learner):
+    def __init__(self, reservation_price, num_products, graph):
         self.reservation_price = reservation_price
         self.products_state = np.zeros(shape=num_products)
-        self.learner = learner
+        self.graph = graph
 
     def set_susceptible(self, prod_number):
         self.products_state[prod_number] = 0
@@ -40,7 +40,7 @@ class Customer:
 
     def click_on(self, first, second):
         if self.set_active(prod_number=second.sequence_number):
-            self.learner.update_estimation(first=first, reward=1)
+            self.graph.update_estimation(node=second, reward=1)
 
         """
         ASSUMPTION: if the same product is clicked (to be set as primary) on multiple parallel pages, nothing happens
@@ -51,6 +51,6 @@ class Customer:
         """We put reward = 0 for the nodes that have been visualized but not clicked on. 
         (still susceptible on close) """
         if self.products_state[second.sequence_number] == 0:
-            self.learner.update_estimation(first=first, second=second, reward=0)
+            self.graph.update_estimation(node=second, reward=0)
         if self.products_state[third.sequence_number] == 0:
-            self.learner.update_estimation(first=first, second=third, reward=0)
+            self.graph.update_estimation(node=third, reward=0)
