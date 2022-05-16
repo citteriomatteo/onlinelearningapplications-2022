@@ -16,7 +16,7 @@ class PricingEnvironment:
         self.num_product_sold = self.user_data.get_num_product_sold()
         self.features = self.user_data.get_features()
         self.classes = self.user_data.get_classes()
-        self.demand_curve = self.user_data.get_demand_curve()
+        self.conversion_rates = self.user_data.get_conversion_rates()
         self.prices = self.user_data.get_prices()
 
         self.graph = graph
@@ -27,12 +27,18 @@ class PricingEnvironment:
             self.graph.edges[i].probability = np.dot(self.theta, self.arms_features[i])
 
     def round(self, pulled_arm):
-        distributions = [0 for i in range(len(pulled_arm))]
-        for prod in range(len(pulled_arm)):
-            #print(prod)
-            #print(pulled_arm[prod])
-            distributions[prod] = np.random.binomial(1, self.demand_curve[0][prod][pulled_arm[prod]])
-            #distributions.append(np.random.binomial(1, self.probabilities[arm]))
+        """
+
+        :param pulled_arm: arm pulled for each product
+        :type pulled_arm: list
+        :return: reward (0 or 1) for every product given the arm
+        :rtype: list
+        """
+        num_product = len(pulled_arm)
+        distributions = [0 for i in range(num_product)]
+        for prod in range(num_product):
+            # TODO conversion_rates[0] means conv rates for the first type of customers. We need to generalize
+            distributions[prod] = np.random.binomial(1, self.conversion_rates[0][prod][pulled_arm[prod]])
         return distributions
 
 

@@ -4,16 +4,24 @@ import numpy as np
 class Learner:
 
     def __init__(self, n_arms, n_products):
+        """
+
+        :param n_arms: number of arms of the learner
+        :type n_arms: int
+        :param n_products: number of products
+        :type n_products: int
+        """
         self.n_arms = n_arms
         self.n_products = n_products
 
-        self.max_idxs = [0 for i in range(n_products)]
-        self.max_revenue = 0
+
 
         ####
-        self.t = 0
+        self.t = 1
         self.rewards = []
+        # matrix n_products X n_arms X list of previous rewards
         self.rewards_per_arm = [[[] for i in range(n_arms)] for j in range(n_products)]
+        # list of pulled arm
         self.pulled = []
 
     def reset(self):
@@ -21,13 +29,18 @@ class Learner:
 
     def update(self, pulled_arms, reward):
         """
+        update the observations list once the reward is returned by the environment
         :param pulled_arms: arms pulled by the learner for every product
-        :param reward: reward returned by the environment
+        :type pulled_arms: list
+        :param reward: rewards returned by the environment for every product
+        :type reward: list
         :return: update the observation list
+        :rtype: None
         """
         self.t += 1
         self.rewards.append(reward)
-        for i in range(len(pulled_arms)):
-            self.rewards_per_arm[i][pulled_arms[i]].append(reward)
-        #self.rewards_per_arm[pulled_arms].append(reward)
+        num_product = len(pulled_arms)
+        #TODO: fix the way the append works
+        for prod in range(num_product):
+            self.rewards_per_arm[prod][pulled_arms[prod]].append(reward[prod])
         self.pulled.append(pulled_arms)
