@@ -22,7 +22,7 @@ class PricingEnvironment:
         self.graph = graph
         self.theta = np.random.dirichlet(np.ones(len(self.graph.nodes)), size=1)
         self.arms_features = np.random.binomial(1, 0.5, size=(len(self.graph.edges), len(self.graph.nodes)))
-        self.lam = Settings.lam
+        self.lam = Settings.LAMBDA
         for i in range(0, len(self.graph.edges)):
             self.graph.edges[i].probability = np.dot(self.theta, self.arms_features[i])
 
@@ -37,7 +37,6 @@ class PricingEnvironment:
         num_product = len(pulled_arm)
         distributions = [0 for i in range(num_product)]
         for prod in range(num_product):
-            # TODO conversion_rates[0] means conv rates for the first type of customers. We need to generalize
             distributions[prod] = np.random.binomial(1, self.conversion_rates[0][prod][pulled_arm[prod]])
         return distributions
 
