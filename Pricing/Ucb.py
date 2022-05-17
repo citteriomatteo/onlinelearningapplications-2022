@@ -17,36 +17,34 @@ class Ucb(Learner):
     def act(self):
         """
 
-        :return:
+        :return: for each product return the arm to pull
         :rtype: int
         """
-        #TODO: Add prices
-        vedere = self.widths + self.means
-        idx = np.argmax((self.widths + self.means), axis=1)
+        idx = np.argmax((self.widths + self.means) * self.prices, axis=1)
         return idx
 
     def update(self, arm_pulled, reward):
+        """
+        update mean and widths
+        :param arm_pulled: arm pulled for every product
+        :type arm_pulled: list
+        :param reward: reward obtained for every product
+        :type reward: list
+        :return: none
+        :rtype: none
+        """
         super().update(arm_pulled, reward)
         num_products = len(arm_pulled)
-        for i in range(num_products):
-            self.means[i][arm_pulled[i]] = np.mean(self.rewards_per_arm[i][arm_pulled[i]])
+        '''update mean for every arm pulled for every product'''
+        for prod in range(num_products):
+            self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
+        '''update widths for every arm pulled for every product'''
         for prod in range(num_products):
             n = len(self.rewards_per_arm[prod][arm_pulled[prod]])
-            if n>0:
-                self.widths[prod][arm_pulled[prod]] = np.sqrt((2 * np.max(np.log(self.t)) / (n)))  # (t-1)? self.prices)
+            if n > 0:
+                self.widths[prod][arm_pulled[prod]] = np.sqrt((2 * np.max(np.log(self.t)) / n))
             else:
                 self.widths[prod][arm_pulled[prod]] = np.inf
-        '''
-                for prod in range(self.n_products):
-            for idx in range(self.n_arms):
-                n = len(self.rewards_per_arm[prod][idx])
-                if n > 0:
-                    self.widths[prod][idx] = np.sqrt((2 * np.max(np.log(self.t)) / (n)))  # (t-1)? self.prices)
-                else:
-                    self.widths[prod][idx] = np.inf
-        '''
-
-
 
 
 graph = Graph(mode="full", weights=True)

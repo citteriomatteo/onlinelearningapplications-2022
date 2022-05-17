@@ -1,3 +1,5 @@
+import random
+
 from Learner import *
 from Pricing.pricingEnvironment import PricingEnvironment
 from Social_Influence.Graph import Graph
@@ -5,7 +7,7 @@ from Social_Influence.Graph import Graph
 
 class Greedy_Learner(Learner):
 
-    def __init__(self, prices, conversion_rates):
+    def __init__(self, prices, conversion_rates, classes):
         """
 
         :param prices: list of products and each product is a list of prices
@@ -17,15 +19,19 @@ class Greedy_Learner(Learner):
         # num of arms (prices for each product)
         self.prices = prices
         self.conversion_rates = conversion_rates
-        self.n_arms = len(prices[0])
-        self.n_products = len(prices)
-
-        self.max_idxs = [0 for i in range(self.n_products)]
-        self.max_revenue = 0
-
+        self.n_arms = len(prices[0][0])
+        self.n_products = len(prices[0])
+        self.classes = classes
         super().__init__(self.n_arms, self.n_products)
 
-        self.max_revenue = self.revenue_given_arms(self.max_idxs)
+        # for each class save the list of arm to pull for each product (3x5)
+        self.max_idxs = [[0 for i in range(self.n_products)] for _ in range(len(classes))]
+        # for each class (3 types of classes) save the max_revenue (3x1)
+        self.max_revenue = [self.revenue_given_arms(self.max_idxs[i], i) for i in range(len(classes))]
+
+        self.classes_probability = []
+        for c in self.classes:
+            self.classes_probability.append(self.classes[c]['fraction'])
 
     def pull_arm(self):
         """
@@ -35,19 +41,24 @@ class Greedy_Learner(Learner):
         """
         # for each product save the total revenue increasing by 1 the arm of that product
         revenues = [0 for i in range(self.n_products)]
+        # Discuss whether to use the method chooseClass here or in line 51
+        classChoice = self.chooseClass()
         for i in range(self.n_products):
-            new_arms = self.max_idxs.copy()
+            new_arms = self.max_idxs[classChoice].copy()
             if new_arms[i] < self.n_arms - 1:
                 new_arms[i] += 1
-                revenues[i] = self.revenue_given_arms(new_arms)
+                revenues[i] = self.revenue_given_arms(new_arms, classChoice)
 
         # index of the best product arm to increase
         price_index_increased = revenues.index(max(revenues))
-        return_arms = self.max_idxs.copy()
+        return_arms = self.max_idxs[classChoice].copy()
         return_arms[price_index_increased] += 1
-        return return_arms, revenues[price_index_increased]
+        return return_arms, revenues[price_index_increased], classChoice
 
-    def revenue_given_arms(self, arms):
+    def chooseClass(self):
+        return random.choices([0, 1, 2], self.classes_probability, k=1)[0]
+
+    def revenue_given_arms(self, arms, choosenClass):
         """
 
         :param arms: list of arms
@@ -57,7 +68,7 @@ class Greedy_Learner(Learner):
         """
         revenue = 0
         for i in range(self.n_products):
-            revenue += self.prices[i][arms[i]] * self.conversion_rates[i][arms[i]]
+            revenue += self.prices[choosenClass][i][arms[i]] * self.conversion_rates[choosenClass][i][arms[i]]
         return revenue
 
     def update(self):
@@ -66,22 +77,26 @@ class Greedy_Learner(Learner):
         :return: update the max_idx and max_revenues
         :rtype: none
         """
-        local_max_found = False
-        while not local_max_found:
+        local_max_found = [False for i in range(len(self.classes))]
+        # iterate until the local maximum has been found for each class
+        while not local_max_found == [True, True, True]:
             print(learner.max_idxs)
             print(learner.max_revenue)
 
-            new_arms, new_revenue = self.pull_arm()
-            if new_revenue > self.max_revenue:
-                self.max_revenue = new_revenue
-                self.max_idxs = new_arms
+            new_arms, new_revenue, chosen_class = self.pull_arm()
+            if new_revenue > self.max_revenue[chosen_class]:
+                self.max_revenue[chosen_class] = new_revenue
+                self.max_idxs[chosen_class] = new_arms
             else:
-                local_max_found = True
+                local_max_found[chosen_class] = True
+                # when a local minimun for a certain class is found, we make sure this class will be no more pulled by putting
+                # its probability equal to 0
+                self.classes_probability[chosen_class] = 0
 
 
 graph = Graph(mode="full", weights=True)
 env = PricingEnvironment(4, graph, 1)
-learner = Greedy_Learner(env.prices[0], env.conversion_rates[0])
+learner = Greedy_Learner(env.prices, env.conversion_rates, env.classes)
 learner.update()
 print('\nFINAL')
 print(learner.max_idxs)
