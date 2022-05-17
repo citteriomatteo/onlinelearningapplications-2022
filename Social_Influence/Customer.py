@@ -8,8 +8,9 @@ class Customer:
              1 -> active
     """
 
-    products_state = []
     cart = []
+    products_state = []
+    pages = []
 
     def __init__(self, reservation_price, num_products, graph):
         self.reservation_price = reservation_price
@@ -38,19 +39,31 @@ class Customer:
             for i in range(quantity):
                 self.cart.append(product)
 
-    def click_on(self, first, second):
-        if self.set_active(prod_number=second.sequence_number):
-            self.graph.update_estimation(node=second, reward=1)
+    def click_on(self, node):
+        if self.set_active(prod_number=node.sequence_number):
+            self.graph.update_estimation(node=node, reward=1)
 
         """
         ASSUMPTION: if the same product is clicked (to be set as primary) on multiple parallel pages, nothing happens
         """
 
-    def close_page(self, first, second, third):
-        self.set_inactive(prod_number=first.sequence_number)
+    def add_new_page(self, new_page):
+        duplicated = False
+        for page in self.pages:
+            if page.is_identical(new_page):
+                duplicated = True
+        if not duplicated:  # if it doesn't already exist an identical page, insert it
+            self.pages.append(new_page)
+
+    def close_page(self, page):
+        self.set_inactive(prod_number=page.primary.sequence_number)
         """We put reward = 0 for the nodes that have been visualized but not clicked on. 
         (still susceptible on close) """
-        if self.products_state[second.sequence_number] == 0:
-            self.graph.update_estimation(node=second, reward=0)
-        if self.products_state[third.sequence_number] == 0:
-            self.graph.update_estimation(node=third, reward=0)
+        if page.second is not None:
+            if self.products_state[page.second.sequence_number] == 0:
+                self.graph.update_estimation(node=page.second, reward=0)
+        if page.third is not None:
+            if self.products_state[page.third.sequence_number] == 0:
+                self.graph.update_estimation(node=page.third, reward=0)
+
+        self.pages.remove(page)

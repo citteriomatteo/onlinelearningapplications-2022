@@ -4,8 +4,6 @@ import numpy as np
 
 from Social_Influence.Edge import Edge
 from Social_Influence.Product import Product
-from Social_Influence.SIEnvironment import SIEnvironment
-
 
 class Graph:
     nodes = []
@@ -22,12 +20,12 @@ class Graph:
         :type nodes: Product
         :param edges: The set of edges
         :type edges: Edge
-        :param M: The matrix used for exploit the upper confidence bound
-        :type M: matrix of float
+        :param M: The matrix used to exploit the upper confidence bounds
+        :type M: matrix of floats
         :param c: Exploration coefficient
-        :type c:
-        :param b:
-        :type b:
+        :type c: integer
+        :param b: vector used to exploit the upper confidence bounds
+        :type b: vector of floats
         """
 
         if mode == "reduced":
@@ -59,6 +57,9 @@ class Graph:
             else:
                 self.edges.append(Edge(node1=node1, node2=node2, probability=edge["probability"]))
 
+        # DUMMY EDGE WITH PROBABILITY 0: USEFUL WHEN ALL NODES ARE ACTIVE/INACTIVE
+        self.dummy_edge = Edge(node1=None, node2=None, probability=0.0)
+
         for node in self.nodes:
             node.set_x(x[node.sequence_number, :])
 
@@ -82,12 +83,13 @@ class Graph:
         for edge in self.edges:
             if edge.node1 == node1 and edge.node2 == node2:
                 return edge
-        return None
+        return self.dummy_edge
 
     def compute_ucbs(self, primary, products_state):
         theta = np.dot(np.linalg.inv(self.M), self.b)
         ucbs = []
         for i in range(len(self.nodes)):
+            # calculates the ucb of susceptible and connected (to the primary) nodes
             if products_state[self.nodes[i].sequence_number] == 0 and primary.x[i] == 1:
                 x = np.atleast_2d(self.nodes[i].x).T
                 ucb = np.dot(theta.T, x) + self.c * np.sqrt(np.dot(x.T, np.dot(np.linalg.inv(self.M), x)))
@@ -96,7 +98,7 @@ class Graph:
                 ucbs.append(-1)
         return ucbs
 
-    def compute_ucbs_complete(self, products_state):
+    def compute_ucbs_complete(self):
         theta = np.dot(np.linalg.inv(self.M), self.b)
         ucbs = []
         for node in self.nodes:
@@ -109,20 +111,23 @@ class Graph:
     def pull_arms(self, node1, products_state):
         ucbs = self.compute_ucbs(primary=node1, products_state=products_state)
         first = np.argmax(ucbs)
-        ucbs[first] = -1
-        second = np.argmax(ucbs)
-        first_node = None
-        second_node = None
-        p1 = 0
-        p2 = 0
 
-        if first != -1:
+        first_node = None
+        p1 = 0
+
+        if ucbs[first] != -1:
             first_node = self.nodes[first]
             e = self.search_edge_by_nodes(node1=node1, node2=first_node)
             if e is not None:
                 p1 = e.probability
 
-        if second != -1:
+        ucbs[first] = -1
+        second = np.argmax(ucbs)
+
+        second_node = None
+        p2 = 0
+
+        if ucbs[second] != -1:
             second_node = self.nodes[second]
             e = self.search_edge_by_nodes(node1=node1, node2=second_node)
             if e is not None:
