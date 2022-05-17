@@ -11,11 +11,6 @@ class Page:
     :type page: Page 
     '''
 
-    def is_identical(self, page):
-        if self.primary == page.primary and self.second == page.second and self.third == page.third:
-            return True
-        return False
-
     def print(self):
         str = ""
         if self.primary is not None:
