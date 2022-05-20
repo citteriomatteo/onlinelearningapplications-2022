@@ -20,6 +20,9 @@ class Graph:
         :type nodes: Product
         :param edges: The set of edges
         :type edges: Edge
+        :param dummy_edge: edge with probability=0
+                            (that we use as the null value, since an edge with zero probability is never chosen)
+        :type dummy_edge: Edge
         :param M: The matrix used to exploit the upper confidence bounds
         :type M: matrix of floats
         :param c: Exploration coefficient

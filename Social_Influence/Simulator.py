@@ -7,8 +7,8 @@ from Social_Influence.Graph import Graph
 from Settings import LAMBDA, CONVERSION_RATE
 from Social_Influence.Page import Page
 
-T = 10
-n_experiments = 100
+T = 20
+n_experiments = 1
 lin_ucb_rewards_per_experiment = []
 history_clicks = np.array([0, 0, 0])
 
@@ -22,9 +22,8 @@ for e in range(0, n_experiments):
     customer = Customer(reservation_price=1000, num_products=5, graph=graph)
 
     for t in range(0, T):
-        customer.print_all_pages()
         action = Action(user=customer)
-        print(" ----- ITERATION: " + str(t) + " -----")
+        print("\n\n ----- ITERATION: " + str(t) + " -----")
         # alpha ratios generation
         alpha = np.random.dirichlet(np.ones(len(graph.nodes)), size=1)
 
@@ -46,14 +45,14 @@ for e in range(0, n_experiments):
             i = np.argmax(alpha)
             primary = graph.search_product_by_number(number=i)
             if not customer.set_active(prod_number=primary.sequence_number):
-                print("No more new tabs!")
+                print("· The customer can open no more new tabs!")
                 new_tab_choice = False
                 # if all the products are inactive, no more tabs can be opened -> break the customer!
                 try:
                     chosen_index = np.random.randint(low=0, high=len(customer.pages))
                 except ValueError:
-                    print("Every product has been visited. Customer eliminated.")
-                    print(len(customer.pages))
+                    customer.print_all_pages()
+                    print("Every product has been visited. Customer finished the run.")
                     break
 
             else:
@@ -63,9 +62,8 @@ for e in range(0, n_experiments):
                 page = Page(primary=primary, second=second, third=third)
                 customer.add_new_page(page)
 
-                print("The customer opened a new tab.")
-                page.print()
-                print("Waiting for the choice...")
+                print("· The customer opened a new tab: the product " + page.primary.name + " is displayed as primary.")
+                customer.print_all_pages()
 
         if not new_tab_choice:  # OLD TAB USAGE
 
@@ -76,8 +74,9 @@ for e in range(0, n_experiments):
             p2 = graph.search_edge_by_nodes(primary, second).probability
             p3 = graph.search_edge_by_nodes(primary, third).probability
 
-            print("The customer chose the tab " + str(chosen_index) + ".")
-            page.print()
+            customer.print_all_pages()
+            print("· The customer chose the page " + str(chosen_index+1) + ".")
+
 
         action.set_page(page)
 
@@ -87,13 +86,12 @@ for e in range(0, n_experiments):
         if np.random.random() < CONVERSION_RATE:  # PRIMARY PRODUCT BOUGHT
 
             quantity = 1
-            print("The customer buys the primary product!")
+            print("· The customer buys the primary product in quantity: " + str(quantity) + "!")
             customer.add_product(product=primary, quantity=quantity)
             action.set_quantity_bought(quantity=quantity)
 
             # -----------------------------------------------------------------------------------
             # 5: CUSTOMERS' CLICK CHOICE BETWEEN: SECOND PRODUCT, THIRD PRODUCT OR CLOSE PAGE
-            print("The customer sees the products...")
             probabilities_scale = [p2, p2 + p3 * LAMBDA, 1]
             rand = np.random.random()
             scale = 1
@@ -112,7 +110,7 @@ for e in range(0, n_experiments):
                 new_page = Page(new_primary, new_second, new_third)
                 action.set_click_second(customer.click_on(new_page=new_page))
 
-                print("the customer clicks on: ", new_primary.name)
+                print("· The customer clicks on: ", new_primary.name)
 
             else:
                 if i == 1:  # THIRD PRODUCT CHOSEN
@@ -125,24 +123,24 @@ for e in range(0, n_experiments):
                     # --- page creation and insertion in the list of customer's pages ---
                     new_page = Page(new_primary, new_second, new_third)
                     action.set_click_third(customer.click_on(new_page=new_page))
-                    print("the customer clicks on: ", new_primary.name)
+                    print("· The customer clicks on: ", new_primary.name)
 
                 else:  # CHOSEN "CLOSE PAGE" OPERATION
                     action.set_page_close(customer.close_page(page))
-                    print("the customer closes the page: ")
+                    print("· The customer closes the page.")
 
         else:  # PAGE CLOSED (PRIMARY PRODUCT NOT BOUGHT)
-            print("the customer closes the page without buy.")
+            print("· The customer closes the page without buying.")
             customer.close_page(page)
 
-        print("ucbs before: ", graph.compute_ucbs_complete())
+        # print("ucbs before: ", graph.compute_ucbs_complete())
 
         action.compute_for_social_influence(graph=graph)
         action.update_history(history_clicks)
 
         action.compute_for_pricing(graph=graph)
 
-        print("ucbs after: ", graph.compute_ucbs_complete())
+        # print("ucbs after: ", graph.compute_ucbs_complete())
 
 """
 print(history_clicks)

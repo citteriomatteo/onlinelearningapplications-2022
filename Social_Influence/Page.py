@@ -6,10 +6,22 @@ class Page:
         self.third = third
 
     '''
-    Used to check whether the page has already been opened before (with the same primary)
-    :param page: the page to confront
-    :type page: Page 
+    Used for getting the formatted texts of the products (for a pretty CLI printing of the pages)
     '''
+    def get_formatted_primary(self):
+        if self.primary is not None:
+            return "| first: " + self.primary.name + "     |    "
+        return "| first: EMPTY  |    "
+
+    def get_formatted_second(self):
+        if self.second is not None:
+            return "| second: " + self.second.name + "    |    "
+        return "| second: EMPTY |    "
+
+    def get_formatted_third(self):
+        if self.third is not None:
+            return "| third: " + self.third.name + "     |    "
+        return "| third: EMPTY  |    "
 
     def print(self):
         str = ""

@@ -56,9 +56,23 @@ class Customer:
         return False
 
     def print_all_pages(self):
-        print("PAGES:")
+        first_prods = ""
+        second_prods = ""
+        third_prods = ""
+
+        print("\nPAGES:")
         if len(self.pages) == 0:
-            print("No pages")
+            print("No pages.\n")
         else:
+            header = ""
             for i in range(len(self.pages)):
-                self.pages[i].print()
+                header += "  PAGE " + str(i + 1) + "             "
+                first_prods += self.pages[i].get_formatted_primary()
+                second_prods += self.pages[i].get_formatted_second()
+                third_prods += self.pages[i].get_formatted_third()
+
+            print(header)
+            print(first_prods)
+            print(second_prods)
+            print(third_prods)
+            print()
