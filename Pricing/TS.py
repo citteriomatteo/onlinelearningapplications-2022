@@ -51,7 +51,7 @@ class TS(Learner):
 
     def expected_reward(self, actual_node, node_to_visit=None):
         """
-
+        the first time i call expected_reward i pass only the actual_node. the parameter node_to_visit is managed during the recursion
         :param actual_node: node from which calculate the expected nearby reward
         :type actual_node: int
         :param node_to_visit: list of node to be visited. If None they are all the nodes without actual_node
@@ -59,20 +59,29 @@ class TS(Learner):
         :return: for each product and price return the expected reward obtained by the potential revenue of other product
         :rtype: matrix 5x4
         """
+
+        # the firs time i call this method i pass only the first parameter, if i also have the second parameter means
+        # this is the recursive call
+        first_call = False
         if node_to_visit is None:
+            first_call = True
+
+        # if it's the first call i can deduce the node to visit (all the node except the actual)
+        if first_call:
             node_to_visit = [i for i in range(self.n_products)]
             node_to_visit.remove(actual_node)
 
         # array containing for the actual_node the expected reward to be calculated
         expected_reward_actual_node = np.zeros(self.n_arms)
-        # calculate expected_reward of actual node
-        for arm in range(self.n_arms):
-            alpha = self.beta_parameters[actual_node][arm][0]
-            beta = self.beta_parameters[actual_node][arm][1]
-            # for each arm calculate the expected reward of the actual_node
-            expected_reward_actual_node[arm] = (alpha / (alpha + beta)) * self.prices[actual_node][arm]
+        if not first_call:
+            # calculate expected_reward of actual node. I put this is else
+            for arm in range(self.n_arms):
+                alpha = self.beta_parameters[actual_node][arm][0]
+                beta = self.beta_parameters[actual_node][arm][1]
+                # for each arm calculate the expected reward of the actual_node
+                expected_reward_actual_node[arm] = (alpha / (alpha + beta)) * self.prices[actual_node][arm]
 
-        # in case of len(node_to_visit) >= 1 there is no need to choose which are the secondary node, otherwise yes
+        # in case of len(node_to_visit) <= 1 there is no need to choose which are the secondary node, otherwise yes
         if len(node_to_visit) <= 1:
             secondary_nodes = node_to_visit
         else:
@@ -99,6 +108,15 @@ class TS(Learner):
             expected_reward_actual_node += prob_to_clik_node * np.mean(self.expected_reward(node, new_node_to_visit))
 
             probability_to_observe = LAMBDA
+
+        # if this is the first call, till now i have in expected_reward_actual_node the same value for each arm
+        # and then i multiply it by the estimation of conversion rate (alpha/(alpha+beta))
+        if first_call:
+            for arm in range(self.n_arms):
+                alpha = self.beta_parameters[actual_node][arm][0]
+                beta = self.beta_parameters[actual_node][arm][1]
+                # for each arm calculate the expected reward of the actual_node
+                expected_reward_actual_node[arm] = (alpha / (alpha + beta)) * expected_reward_actual_node[arm]
 
         return expected_reward_actual_node
 
