@@ -12,6 +12,8 @@ class TS(Learner):
         self.prices = prices
         self.beta_parameters = np.ones((self.n_products, n_arms, 2))
         self.graph = graph
+        self.success_per_arm_batch = np.zeros((self.n_products,self.n_arms))
+        self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
 
     def pull_arm(self):
         """
@@ -25,11 +27,11 @@ class TS(Learner):
             beta = np.random.beta(self.beta_parameters[prod, :, 0], self.beta_parameters[prod, :, 1])
             # arm of the current product with highest expected reward
             idx[prod] = np.argmax(beta * self.prices[prod])
-            print("rewards prod %d: %s" % (prod, beta * self.prices[prod]))
+            #print("rewards prod %d: %s" % (prod, beta * self.prices[prod]))
             # print("NEARBY REWARDS - old - %d: %s" % (prod, self.expected_nearby_reward(prod)[prod]))
             # print("NEARBY REWARDS -check- %d: %s" % (prod, self.reward_of_node_without_nearby(prod)[prod]))
-            print("NEARBY REWARDS - new - %d: %s" % (prod, self.expected_reward(prod)))
-        print("arm pulled", idx)
+            #print("NEARBY REWARDS - new - %d: %s" % (prod, self.expected_reward(prod)))
+        #print("arm pulled", idx)
         return idx
 
     def update(self, pulled_arm, reward):
@@ -44,10 +46,24 @@ class TS(Learner):
         """
         super(TS, self).update(pulled_arm, reward)
         for prod in range(self.n_products):
-            self.beta_parameters[prod, pulled_arm[prod], 0] = self.beta_parameters[prod, pulled_arm[prod], 0] + reward[
-                prod]
-            self.beta_parameters[prod, pulled_arm[prod], 1] = self.beta_parameters[prod, pulled_arm[prod], 1] + 1.0 - \
-                                                              reward[prod]
+            self.success_per_arm_batch[prod,pulled_arm[prod]] += reward[prod]
+            self.pulled_per_arm_batch[prod,pulled_arm[prod]] += 1
+
+
+        #for prod in range(self.n_products):
+            #self.beta_parameters[prod, pulled_arm[prod], 0] = self.beta_parameters[prod, pulled_arm[prod], 0] + reward[
+                #prod]
+            #self.beta_parameters[prod, pulled_arm[prod], 1] = self.beta_parameters[prod, pulled_arm[prod], 1] + 1.0 - \
+                                                              #reward[prod]
+
+    def update_beta_distributions(self):
+
+        self.beta_parameters[:,:, 0] = self.beta_parameters[:,:, 0] + self.success_per_arm_batch[:,:]
+        self.beta_parameters[:,:, 1] = self.beta_parameters[:,:, 1] + self.pulled_per_arm_batch - self.success_per_arm_batch
+
+        self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
+        self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
+
 
     def expected_reward(self, actual_node, node_to_visit=None):
         """
@@ -129,4 +145,6 @@ for i in range(10000):
     pulled_arms = learner.pull_arm()
     rewards = env.round(pulled_arms)
     learner.update(pulled_arms, rewards)
+    if (i%10==0):
+        learner.update_beta_distributions()
     print(pulled_arms)
