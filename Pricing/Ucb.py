@@ -22,7 +22,7 @@ class Ucb(Learner):
         :return: for each product return the arm to pull
         :rtype: int
         """
-        #aaa = self.totalNearbyRewardEstimation()
+        aaa = self.totalNearbyRewardEstimation()
         #print(aaa)
         idx = np.argmax((self.widths + self.means) * self.prices, axis=1)
         return idx
@@ -64,17 +64,17 @@ class Ucb(Learner):
                                                                                probToBuyASecondary)
         return valueToReturn
 
-    def update(self, arm_pulled, reward):
+    def updateHistory(self, arm_pulled, reward):
+        super().update(arm_pulled, reward)
+
+    def update(self, arm_pulled):
         """
         update mean and widths
         :param arm_pulled: arm pulled for every product
         :type arm_pulled: list
-        :param reward: reward obtained for every product
-        :type reward: list
         :return: none
         :rtype: none
         """
-        super().update(arm_pulled, reward)
         num_products = len(arm_pulled)
         '''update mean for every arm pulled for every product'''
         for prod in range(num_products):
@@ -92,10 +92,13 @@ graph = Graph(mode="full", weights=True)
 env = PricingEnvironment(4, graph, 1)
 learner = Ucb(4, env.prices[0], graph)
 
-for i in range(1000):
+for i in range(10000):
     pulled_arms = learner.act()
     rewards = env.round(pulled_arms)
-    learner.update(pulled_arms, rewards)
+    learner.updateHistory(pulled_arms,rewards)
+    # TODO  non hardcodare
+    if i % 10 == 0:
+        learner.update(pulled_arms)
     print(pulled_arms)
 print(learner.means)
 print(learner.widths)
