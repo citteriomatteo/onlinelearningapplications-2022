@@ -7,7 +7,7 @@ from Social_Influence.Graph import Graph
 
 class Greedy_Learner(Learner):
 
-    def __init__(self, prices, conversion_rates, classes):
+    def __init__(self, prices, conversion_rates, classes, secondaries):
         """
 
         :param prices: list of products and each product is a list of prices
@@ -22,6 +22,7 @@ class Greedy_Learner(Learner):
         self.n_arms = len(prices[0][0])
         self.n_products = len(prices[0])
         self.classes = classes
+        self.secondaries = secondaries
         super().__init__(self.n_arms, self.n_products)
 
         # for each class save the list of arm to pull for each product (3x5)
@@ -68,8 +69,30 @@ class Greedy_Learner(Learner):
         """
         revenue = 0
         for i in range(self.n_products):
-            revenue += self.prices[choosenClass][i][arms[i]] * self.conversion_rates[choosenClass][i][arms[i]]
+            conversion_for_best_arms = [i[j] for i,j in zip(self.conversion_rates[choosenClass], self.max_idxs[choosenClass])]
+            revenue += (self.prices[choosenClass][i][arms[i]] * self.conversion_rates[choosenClass][i][arms[i]])\
+                       + self.singleNearbyRewardEstimation(self.calculateNodesToVisit(i),conversion_for_best_arms, i,
+                                                           self.conversion_rates[choosenClass][i][arms[i]], choosenClass)
         return revenue
+
+    def calculateNodesToVisit(self, index):
+        list = [0,1,2,3,4]
+        list.remove(index)
+        return list
+
+    def singleNearbyRewardEstimation(self, nodesToVisit, conversion_estimation_for_best_arms, product, probabilityToEnter, chosenClass):
+        valueToReturn = 0
+        for j in (list(set(nodesToVisit).intersection(self.secondaries[product]))):
+            probabilityToVisitSecondary = graph.search_edge_by_nodes(graph.search_product_by_number(product),
+                                                                     graph.search_product_by_number(j)).probability
+            probToBuyASecondary = conversion_estimation_for_best_arms[j] * probabilityToVisitSecondary * probabilityToEnter
+            valueToReturn += self.prices[chosenClass][j][self.max_idxs[chosenClass][j]] * probToBuyASecondary
+            if(probToBuyASecondary>(1e-6)):
+                copyList = nodesToVisit.copy()
+                copyList.remove(j)
+                valueToReturn += self.singleNearbyRewardEstimation(copyList, conversion_estimation_for_best_arms,
+                                                                   j, probToBuyASecondary,chosenClass)
+        return valueToReturn
 
     def update(self):
         """
@@ -96,7 +119,7 @@ class Greedy_Learner(Learner):
 
 graph = Graph(mode="full", weights=True)
 env = PricingEnvironment(4, graph, 1)
-learner = Greedy_Learner(env.prices, env.conversion_rates, env.classes)
+learner = Greedy_Learner(env.prices, env.conversion_rates, env.classes, env.secondaries)
 learner.update()
 print('\nFINAL')
 print(learner.max_idxs)
