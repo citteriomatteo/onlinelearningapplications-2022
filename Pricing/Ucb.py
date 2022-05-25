@@ -5,63 +5,50 @@ from Social_Influence.Graph import Graph
 
 
 class Ucb(Learner):
-    def __init__(self, n_arms, prices, graph):
+    def __init__(self, n_arms, prices, secondaries, graph):
         super().__init__(n_arms, len(prices))
         self.prices = prices
-        self.pricesMeanPerProduct = np.mean(self.prices,1)
+        self.pricesMeanPerProduct = np.mean(self.prices, 1)
         self.means = np.zeros(prices.shape)
+        self.nearbyReward = np.zeros(prices.shape)
         self.widths = np.ones(prices.shape) * np.inf
         self.graph = graph
+        self.secondaries = secondaries
+        self.currentBestArms = np.zeros(len(prices))
 
     def reset(self):
         self.__init__(self.n_arms, self.prices, self.graph)
 
     def act(self):
         """
-
         :return: for each product return the arm to pull
         :rtype: int
         """
-        aaa = self.totalNearbyRewardEstimation()
-        #print(aaa)
-        idx = np.argmax((self.widths + self.means) * self.prices, axis=1)
+        idx = np.argmax((self.widths + self.means) * (self.prices + self.nearbyReward), axis=1)
         return idx
 
     def totalNearbyRewardEstimation(self):
-        conversionMeanPerProduct = np.mean(self.means, 1)
+        conversion_of_current_best = [i[j] for i,j in zip(self.means,self.currentBestArms)]
         nearbyRewardsTable = np.zeros(self.prices.shape)
         nodesToVisit = [i for i in range(len(self.prices))]
         for node in nodesToVisit:
             copyList = nodesToVisit.copy()
             copyList.remove(node)
             for price in range(len(self.prices[0])):
-                nearbyRewardsTable[node][price] += self.singleNearbyRewardEstimationFirstLayer(copyList,conversionMeanPerProduct,
-                                                                                               node, self.means[node][price])
-        return  nearbyRewardsTable
+                nearbyRewardsTable[node][price] += self.singleNearbyRewardEstimation(copyList, conversion_of_current_best,
+                                                                                     node, self.means[node][price])
+        return nearbyRewardsTable
 
-    def singleNearbyRewardEstimationFirstLayer(self, nodesToVisit, conversionMeanPerProduct, product, probabilityToEnter):
+    def singleNearbyRewardEstimation(self, nodesToVisit, conversion_estimation_for_best_arms, product, probabilityToEnter):
         valueToReturn = 0
-        for j in nodesToVisit:
-            probabilityToVisitSecondary = graph.search_edge_by_nodes(graph.search_product_by_number(product),graph.search_product_by_number(j)).probability
-            probToBuyASecondary = conversionMeanPerProduct[j] * probabilityToVisitSecondary * probabilityToEnter
-            valueToReturn += self.pricesMeanPerProduct[j] * probToBuyASecondary
+        for j in (list(set(nodesToVisit).intersection(self.secondaries[product]))):
+            probabilityToVisitSecondary = graph.search_edge_by_nodes(graph.search_product_by_number(product), graph.search_product_by_number(j)).probability
+            probToBuyASecondary = conversion_estimation_for_best_arms[j] * probabilityToVisitSecondary * probabilityToEnter
+            valueToReturn += self.prices[j][self.currentBestArms[j]] * probToBuyASecondary
             if(probToBuyASecondary>(1e-6)):
                 copyList = nodesToVisit.copy()
                 copyList.remove(j)
-                valueToReturn += self.singleNearbyRewardEstimationDeeperLayers(copyList, conversionMeanPerProduct, j, probToBuyASecondary)
-        return valueToReturn
-
-    def singleNearbyRewardEstimationDeeperLayers(self, nodesToVisit, conversionMeanPerProduct, product, probabilityToEnter):
-        valueToReturn = 0
-        for j in nodesToVisit:
-            probabilityToVisitSecondary = graph.search_edge_by_nodes(graph.search_product_by_number(product),graph.search_product_by_number(j)).probability
-            probToBuyASecondary = conversionMeanPerProduct[j] * probabilityToVisitSecondary * probabilityToEnter
-            valueToReturn += self.pricesMeanPerProduct[j] * probToBuyASecondary
-            if (probToBuyASecondary > (1e-6)):
-                copyList = nodesToVisit.copy()
-                copyList.remove(j)
-                valueToReturn += self.singleNearbyRewardEstimationDeeperLayers(copyList, conversionMeanPerProduct, j,
-                                                                               probToBuyASecondary)
+                valueToReturn += self.singleNearbyRewardEstimation(copyList, conversion_estimation_for_best_arms, j, probToBuyASecondary)
         return valueToReturn
 
     def updateHistory(self, arm_pulled, reward):
@@ -75,6 +62,8 @@ class Ucb(Learner):
         :return: none
         :rtype: none
         """
+        self.currentBestArms = arm_pulled
+        self.nearbyReward = self.totalNearbyRewardEstimation()
         num_products = len(arm_pulled)
         '''update mean for every arm pulled for every product'''
         for prod in range(num_products):
@@ -90,14 +79,16 @@ class Ucb(Learner):
 
 graph = Graph(mode="full", weights=True)
 env = PricingEnvironment(4, graph, 1)
-learner = Ucb(4, env.prices[0], graph)
+learner = Ucb(4, env.prices[0], env.secondaries, graph)
 
 for i in range(10000):
+    if i == 50:
+        aaa = 1
     pulled_arms = learner.act()
     rewards = env.round(pulled_arms)
     learner.updateHistory(pulled_arms,rewards)
     # TODO  non hardcodare
-    if i % 10 == 0:
+    if (i % 10 == 0) and (i!=0):
         learner.update(pulled_arms)
     print(pulled_arms)
 print(learner.means)

@@ -31,6 +31,7 @@ class StandardDataGenerator:
         self._num_daily_users = self._data['num_daily_users']
         # number of product sold
         self._num_product_sold = self._data['num_product_sold']
+        self._secondaries = self._data['secondaries']
 
     def get_source(self) -> str:
         return self._filename
@@ -58,3 +59,6 @@ class StandardDataGenerator:
 
     def get_prices(self):
         return self._prices
+
+    def get_secondaries(self):
+        return self._secondaries

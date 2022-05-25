@@ -18,6 +18,7 @@ class PricingEnvironment:
         self.classes = self.user_data.get_classes()
         self.conversion_rates = self.user_data.get_conversion_rates()
         self.prices = self.user_data.get_prices()
+        self.secondaries = self.user_data.get_secondaries()
 
         self.graph = graph
         self.theta = np.random.dirichlet(np.ones(len(self.graph.nodes)), size=1)
