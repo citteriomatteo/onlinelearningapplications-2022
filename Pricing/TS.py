@@ -37,7 +37,7 @@ class TS(Learner):
         # print("arm pulled", idx)
         return idx
 
-    def update(self, pulled_arm, reward):
+    def update(self, pulled_arm, visited_products, num_bought_products):
         """
         update alpha and beta parameters
         :param pulled_arm: arm pulled for every product
@@ -47,10 +47,12 @@ class TS(Learner):
         :return: none
         :rtype: none
         """
-        super(TS, self).update(pulled_arm, reward)
+        super(TS, self).update(pulled_arm, visited_products, num_bought_products)
         for prod in range(self.n_products):
-            self.success_per_arm_batch[prod, pulled_arm[prod]] += reward[prod]
-            self.pulled_per_arm_batch[prod, pulled_arm[prod]] += 1
+            if visited_products[prod] == 1:
+                if num_bought_products[prod] > 0:
+                    self.success_per_arm_batch[prod, pulled_arm[prod]] += 1
+                self.pulled_per_arm_batch[prod, pulled_arm[prod]] += 1
 
         # for prod in range(self.n_products):
         # self.beta_parameters[prod, pulled_arm[prod], 0] = self.beta_parameters[prod, pulled_arm[prod], 0] + reward[
@@ -141,8 +143,8 @@ learner = TS(4, env.prices[0], env.secondaries, env.num_product_sold[0], graph)
 
 for i in range(10000):
     pulled_arms = learner.pull_arm()
-    rewards = env.round(pulled_arms)
-    learner.update(pulled_arms, rewards)
-    if (i % 10 == 0):
+    visited_products, num_bought_products = env.round(pulled_arms)
+    learner.update(pulled_arms, visited_products, num_bought_products)
+    if (i % 10 == 0) and (i != 0):
         learner.update_beta_distributions()
     print(pulled_arms)

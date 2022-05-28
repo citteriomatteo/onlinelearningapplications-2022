@@ -2,6 +2,7 @@ import numpy as np
 
 import Settings
 from Social_Influence.Graph import Graph
+from Social_Influence.Simulator import Simulator
 from user_data_generator import StandardDataGenerator
 
 
@@ -19,8 +20,8 @@ class PricingEnvironment:
         self.conversion_rates = self.user_data.get_conversion_rates()
         self.prices = self.user_data.get_prices()
         self.secondaries = self.user_data.get_secondaries()
-
         self.graph = graph
+        self.simulator = Simulator(self.graph, self.alpha_ratios[0], self.num_product_sold[0], self.secondaries)
         self.theta = np.random.dirichlet(np.ones(len(self.graph.nodes)), size=1)
         self.arms_features = np.random.binomial(1, 0.5, size=(len(self.graph.edges), len(self.graph.nodes)))
         self.lam = Settings.LAMBDA
@@ -35,11 +36,13 @@ class PricingEnvironment:
         :return: reward (0 or 1) for every product given the arm
         :rtype: list
         """
-        num_product = len(pulled_arm)
+        visited_products, num_bought_products = self.simulator.simulate(pulled_arm)
+        return visited_products, num_bought_products
+        '''num_product = len(pulled_arm)
         distributions = [0 for i in range(num_product)]
         for prod in range(num_product):
             distributions[prod] = np.random.binomial(1, self.conversion_rates[0][prod][pulled_arm[prod]])
-        return distributions
+        return distributions'''
 
 
 graph = Graph(mode="full", weights=True)

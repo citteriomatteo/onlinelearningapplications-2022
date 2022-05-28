@@ -47,6 +47,8 @@ class Greedy_Learner(Learner):
         classChoice = self.chooseClass()
         for i in range(self.n_products):
             new_arms = self.max_idxs[classChoice].copy()
+            # calculate the revenue of each nearby arm (if the best combination is 00000, it tries
+            # 00001, 00010, 00100, 01000, 10000
             if new_arms[i] < self.n_arms - 1:
                 new_arms[i] += 1
                 revenues[i] = self.revenue_given_arms(new_arms, classChoice)
@@ -60,41 +62,60 @@ class Greedy_Learner(Learner):
     def chooseClass(self):
         return random.choices([0, 1, 2], self.classes_probability, k=1)[0]
 
-    def revenue_given_arms(self, arms, choosenClass):
+    def revenue_given_arms(self, arms, chosen_class):
         """
-
+        Returns the revenue of a given combination of arms of a given user class
         :param arms: list of arms
         :type arms: list
+        :param chosen_class: the user class given by the external of the method
         :return:
         :rtype:
         """
         revenue = 0
         for i in range(self.n_products):
-            conversion_for_best_arms = [i[j] for i,j in zip(self.conversion_rates[choosenClass], self.max_idxs[choosenClass])]
-            revenue += (self.prices[choosenClass][i][arms[i]] * self.conversion_rates[choosenClass][i][arms[i]]*self.num_product_sold[choosenClass][i][arms[i]])\
-                       + self.singleNearbyRewardEstimation(self.calculateNodesToVisit(i),conversion_for_best_arms, i,
-                                                           self.conversion_rates[choosenClass][i][arms[i]], choosenClass)
+            conversion_for_best_arms = [i[j] for i, j in zip(self.conversion_rates[chosen_class],
+                                                             self.max_idxs[chosen_class])]
+            revenue += (self.prices[chosen_class][i][arms[i]] * self.conversion_rates[chosen_class][i][arms[i]]
+                        * self.num_product_sold[chosen_class][i][arms[i]]) + self.singleNearbyRewardEstimation \
+                           (self.calculateNodesToVisit(i), conversion_for_best_arms, i,
+                            self.conversion_rates[chosen_class][i][arms[i]], chosen_class)
         return revenue
 
-    def calculateNodesToVisit(self, index):
-        list = [0,1,2,3,4]
-        list.remove(index)
-        return list
+    @staticmethod
+    def calculateNodesToVisit(index):
+        list_to_return = [0, 1, 2, 3, 4]
+        list_to_return.remove(index)
+        return list_to_return
 
-    def singleNearbyRewardEstimation(self, nodesToVisit, conversion_estimation_for_best_arms, product, probabilityToEnter, chosenClass):
-        valueToReturn = 0
-        for j in (list(set(nodesToVisit).intersection(self.secondaries[product]))):
-            probabilityToVisitSecondary = graph.search_edge_by_nodes(graph.search_product_by_number(product),
-                                                                     graph.search_product_by_number(j)).probability
-            probToBuyASecondary = conversion_estimation_for_best_arms[j] * probabilityToVisitSecondary * probabilityToEnter
-            valueToReturn += self.prices[chosenClass][j][self.max_idxs[chosenClass][j]] * probToBuyASecondary \
-                             * self.num_product_sold[chosenClass][j][self.max_idxs[chosenClass][j]]
-            if(probToBuyASecondary>(1e-6)):
-                copyList = nodesToVisit.copy()
-                copyList.remove(j)
-                valueToReturn += self.singleNearbyRewardEstimation(copyList, conversion_estimation_for_best_arms,
-                                                                   j, probToBuyASecondary,chosenClass)
-        return valueToReturn
+    def singleNearbyRewardEstimation(self, nodes_to_visit, conversion_estimation_for_best_arms, product,
+                                     probability_to_enter, chosen_class):
+        """
+        :return: nearby reward of a single price of a single product
+        :rtype: float
+        """
+        value_to_return = 0
+        # for each node that is possible to visit from the starting one, calculates its nearby reward
+        for j in (list(set(nodes_to_visit).intersection(self.secondaries[product]))):
+            # the probability from a node to visit another one is given by the edge of the graph connecting the two
+            # nodes/products
+            probability_to_visit_secondary = graph.search_edge_by_nodes(graph.search_product_by_number(product),
+                                                                        graph.search_product_by_number(j)).probability
+            # the chance of buying a secondary product is given by the probability of visiting it, the probability
+            # to buy the primary and the probability to buy the secondary once its page is reached (its
+            # conversion rate)
+            prob_to_buy_a_secondary = conversion_estimation_for_best_arms[
+                                          j] * probability_to_visit_secondary * probability_to_enter
+            value_to_return += self.prices[chosen_class][j][self.max_idxs[chosen_class][j]] * prob_to_buy_a_secondary \
+                               * self.num_product_sold[chosen_class][j][self.max_idxs[chosen_class][j]]
+            # the tree must be ran across deeper, but it is useless to visit it if the chance of reaching a deeper node
+            # is almost zero, so it is checked how much probable it is to going deeper before
+            # doing the other calculations
+            if prob_to_buy_a_secondary > 1e-6:
+                copy_list = nodes_to_visit.copy()
+                copy_list.remove(j)
+                value_to_return += self.singleNearbyRewardEstimation(copy_list, conversion_estimation_for_best_arms,
+                                                                     j, prob_to_buy_a_secondary, chosen_class)
+        return value_to_return
 
     def update(self):
         """
@@ -114,8 +135,8 @@ class Greedy_Learner(Learner):
                 self.max_idxs[chosen_class] = new_arms
             else:
                 local_max_found[chosen_class] = True
-                # when a local minimun for a certain class is found, we make sure this class will be no more pulled by putting
-                # its probability equal to 0
+                # when a local minimum for a certain class is found, we make sure this class will
+                # be no more pulled by putting its probability equal to 0
                 self.classes_probability[chosen_class] = 0
 
 

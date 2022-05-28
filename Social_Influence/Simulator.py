@@ -9,14 +9,26 @@ from Social_Influence.Page import Page
 
 
 class Simulator:
-    def __init__(self, graph):
+    def __init__(self, graph, alpha_ratios, num_product_sold, secondaries):
         self.graph = graph
+        self.alpha_ratios = alpha_ratios
+        self.num_product_sold = num_product_sold
+        self.secondaries = secondaries
 
-    def simulate(self, customer, num_prod):
+    @staticmethod
+    def generateRandomQuantity(mean):
+        deviation = mean - 1
+        print("mean: "+str(mean) + " deviation: "+str(deviation))
+        return random.randint(round(mean - deviation), round(mean + deviation))
+
+    def simulate(self, selected_prices):
+
+        customer = Customer(reservation_price=100, num_products=len(self.graph.nodes), graph=self.graph)
+        num_prod = random.choices([0, 1, 2, 3, 4], self.alpha_ratios[1:], k=1)[0]
 
         t = 0
-        visited_products = np.zeros(len(self.graph.nodes))
-        num_bought_products = np.zeros(len(self.graph.nodes))
+        visited_products = np.zeros(len(self.alpha_ratios)-1)
+        num_bought_products = np.zeros(len(self.alpha_ratios)-1)
 
         primary = self.graph.nodes[num_prod]
         # TODO change the method for taking second and third
@@ -30,7 +42,7 @@ class Simulator:
 
             action = Action(user=customer)
 
-            print("\n\n ----- ITERATION: " + str(t) + " -----")
+            #print("\n\n ----- ITERATION: " + str(t) + " -----")
 
             # -----------------------------------------------------------------------------------
             # 2: CUSTOMERS' CHOICE BETWEEN OPENING A NEW TAB AND USING AN ALREADY OPENED ONE
@@ -46,8 +58,8 @@ class Simulator:
             p2 = self.graph.search_edge_by_nodes(primary, second).probability
             p3 = self.graph.search_edge_by_nodes(primary, third).probability
 
-            customer.print_all_pages()
-            print("· The customer chose the page " + str(chosen_index + 1) + ".")
+            #customer.print_all_pages()
+            #print("· The customer chose the page " + str(chosen_index + 1) + ".")
 
             action.set_page(page)
 
@@ -55,9 +67,8 @@ class Simulator:
             # 4: CUSTOMERS' CHOICE BETWEEN BUYING AND NOT BUYING THE PRIMARY PRODUCT
 
             if np.random.random() < CONVERSION_RATE:  # PRIMARY PRODUCT BOUGHT
-
-                quantity = np.random.randint(1, 5)
-                print("· The customer buys the primary product in quantity: " + str(quantity) + "!")
+                quantity = self.generateRandomQuantity(self.num_product_sold[num_prod][selected_prices[num_prod]])
+                #print("· The customer buys the primary product in quantity: " + str(quantity) + "!")
                 customer.add_product(product=primary, quantity=quantity)
                 action.set_quantity_bought(quantity=quantity)
                 num_bought_products[page.primary.sequence_number] += quantity
@@ -79,7 +90,7 @@ class Simulator:
                     action.set_click_second(customer.click_on(new_page=new_page))
 
                     visited_products[new_primary.sequence_number] = 1
-                    print("· The customer clicks on: ", new_primary.name)
+                    #print("· The customer clicks on: ", new_primary.name)
 
                 else:
                     if choice == 1:  # THIRD PRODUCT CHOSEN
@@ -95,14 +106,14 @@ class Simulator:
                         action.set_click_third(customer.click_on(new_page=new_page))
 
                         visited_products[new_primary.sequence_number] = 1
-                        print("· The customer clicks on: ", new_primary.name)
+                        #print("· The customer clicks on: ", new_primary.name)
 
                     else:  # CHOSEN "CLOSE PAGE" OPERATION
                         action.set_page_close(customer.close_page(page))
-                        print("· The customer closes the page.")
+                        #print("· The customer closes the page.")
 
             else:  # PAGE CLOSED (PRIMARY PRODUCT NOT BOUGHT)
-                print("· The customer closes the page without buying.")
+                #print("· The customer closes the page without buying.")
                 customer.close_page(page)
 
             action.compute_for_social_influence(graph=self.graph)
