@@ -28,7 +28,7 @@ class StandardDataGenerator:
         # alpha ratios
         self._alpha_ratios = self._data['alpha_ratios']
         # number of daily users
-        self._num_daily_users = self._data['num_daily_users']
+        self._num_daily_users = np.array(self._data['num_daily_users'])
         # number of product sold
         self._num_product_sold = self._data['num_product_sold']
         self._secondaries = self._data['secondaries']

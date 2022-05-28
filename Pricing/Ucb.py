@@ -5,7 +5,7 @@ from Social_Influence.Graph import Graph
 
 
 class Ucb(Learner):
-    def __init__(self, n_arms, prices, secondaries, graph):
+    def __init__(self, n_arms, prices, secondaries, num_product_sold, graph):
         super().__init__(n_arms, len(prices))
         self.prices = prices
         self.pricesMeanPerProduct = np.mean(self.prices, 1)
@@ -15,6 +15,7 @@ class Ucb(Learner):
         self.graph = graph
         self.secondaries = secondaries
         self.currentBestArms = np.zeros(len(prices))
+        self.num_product_sold = num_product_sold
 
     def reset(self):
         self.__init__(self.n_arms, self.prices, self.graph)
@@ -24,11 +25,11 @@ class Ucb(Learner):
         :return: for each product return the arm to pull
         :rtype: int
         """
-        idx = np.argmax((self.widths + self.means) * (self.prices + self.nearbyReward), axis=1)
+        idx = np.argmax((self.widths + self.means) * ((self.prices*self.num_product_sold) + self.nearbyReward), axis=1)
         return idx
 
     def totalNearbyRewardEstimation(self):
-        conversion_of_current_best = [i[j] for i,j in zip(self.means,self.currentBestArms)]
+        conversion_of_current_best = [i[j] for i,j in zip(self.means, self.currentBestArms)]
         nearbyRewardsTable = np.zeros(self.prices.shape)
         nodesToVisit = [i for i in range(len(self.prices))]
         for node in nodesToVisit:
@@ -44,7 +45,7 @@ class Ucb(Learner):
         for j in (list(set(nodesToVisit).intersection(self.secondaries[product]))):
             probabilityToVisitSecondary = graph.search_edge_by_nodes(graph.search_product_by_number(product), graph.search_product_by_number(j)).probability
             probToBuyASecondary = conversion_estimation_for_best_arms[j] * probabilityToVisitSecondary * probabilityToEnter
-            valueToReturn += self.prices[j][self.currentBestArms[j]] * probToBuyASecondary
+            valueToReturn += self.prices[j][self.currentBestArms[j]] * probToBuyASecondary * self.num_product_sold[j][self.currentBestArms[j]]
             if(probToBuyASecondary>(1e-6)):
                 copyList = nodesToVisit.copy()
                 copyList.remove(j)
@@ -79,7 +80,7 @@ class Ucb(Learner):
 
 graph = Graph(mode="full", weights=True)
 env = PricingEnvironment(4, graph, 1)
-learner = Ucb(4, env.prices[0], env.secondaries, graph)
+learner = Ucb(4, env.prices[0], env.secondaries, env.num_product_sold[0], graph)
 
 for i in range(10000):
     if i == 50:

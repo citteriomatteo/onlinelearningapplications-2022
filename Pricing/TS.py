@@ -7,13 +7,15 @@ from Social_Influence.Graph import Graph
 
 class TS(Learner):
 
-    def __init__(self, n_arms, prices, graph):
+    def __init__(self, n_arms, prices, secondaries, num_product_sold, graph):
         super().__init__(n_arms, len(prices))
         self.prices = prices
         self.beta_parameters = np.ones((self.n_products, n_arms, 2))
         self.graph = graph
         self.success_per_arm_batch = np.zeros((self.n_products,self.n_arms))
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
+        self.secondaries = secondaries
+        self.num_product_sold = num_product_sold
 
     def pull_arm(self):
         """
@@ -26,7 +28,8 @@ class TS(Learner):
             # generate beta for every price of the current product
             beta = np.random.beta(self.beta_parameters[prod, :, 0], self.beta_parameters[prod, :, 1])
             # arm of the current product with highest expected reward
-            idx[prod] = np.argmax(beta * self.prices[prod])
+            #TODO: add expected reward
+            idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold[prod])))
             #print("rewards prod %d: %s" % (prod, beta * self.prices[prod]))
             # print("NEARBY REWARDS - old - %d: %s" % (prod, self.expected_nearby_reward(prod)[prod]))
             # print("NEARBY REWARDS -check- %d: %s" % (prod, self.reward_of_node_without_nearby(prod)[prod]))
@@ -95,7 +98,7 @@ class TS(Learner):
                 alpha = self.beta_parameters[actual_node][arm][0]
                 beta = self.beta_parameters[actual_node][arm][1]
                 # for each arm calculate the expected reward of the actual_node
-                expected_reward_actual_node[arm] = (alpha / (alpha + beta)) * self.prices[actual_node][arm]
+                expected_reward_actual_node[arm] = (alpha / (alpha + beta)) * self.prices[actual_node][arm] * self.num_product_sold[actual_node][arm]
 
         # in case of len(node_to_visit) <= 1 there is no need to choose which are the secondary node, otherwise yes
         if len(node_to_visit) <= 1:
@@ -139,7 +142,7 @@ class TS(Learner):
 
 graph = Graph(mode="full", weights=True)
 env = PricingEnvironment(4, graph, 1)
-learner = TS(4, env.prices[0], graph)
+learner = TS(4, env.prices[0], env.secondaries, env.num_product_sold[0], graph)
 
 for i in range(10000):
     pulled_arms = learner.pull_arm()
