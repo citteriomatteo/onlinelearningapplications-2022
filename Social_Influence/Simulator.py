@@ -9,11 +9,12 @@ from Social_Influence.Page import Page
 
 
 class Simulator:
-    def __init__(self, graph, alpha_ratios, num_product_sold, secondaries):
+    def __init__(self, graph, alpha_ratios, num_product_sold, secondaries, conversion_rates):
         self.graph = graph
         self.alpha_ratios = alpha_ratios
         self.num_product_sold = num_product_sold
         self.secondaries = secondaries
+        self.conversion_rates = conversion_rates
 
     @staticmethod
     def generateRandomQuantity(mean):
@@ -66,7 +67,7 @@ class Simulator:
             # -----------------------------------------------------------------------------------
             # 4: CUSTOMERS' CHOICE BETWEEN BUYING AND NOT BUYING THE PRIMARY PRODUCT
 
-            if np.random.random() < CONVERSION_RATE:  # PRIMARY PRODUCT BOUGHT
+            if np.random.random() < self.conversion_rates[primary.sequence_number][selected_prices[primary.sequence_number]]:  # PRIMARY PRODUCT BOUGHT
                 quantity = self.generateRandomQuantity(self.num_product_sold[num_prod][selected_prices[num_prod]])
                 #print("· The customer buys the primary product in quantity: " + str(quantity) + "!")
                 customer.add_product(product=primary, quantity=quantity)

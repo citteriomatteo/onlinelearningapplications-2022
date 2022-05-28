@@ -21,7 +21,8 @@ class PricingEnvironment:
         self.prices = self.user_data.get_prices()
         self.secondaries = self.user_data.get_secondaries()
         self.graph = graph
-        self.simulator = Simulator(self.graph, self.alpha_ratios[0], self.num_product_sold[0], self.secondaries)
+        self.simulator = Simulator(self.graph, self.alpha_ratios[0], self.num_product_sold[0], self.secondaries,
+                                   self.conversion_rates[0])
         self.theta = np.random.dirichlet(np.ones(len(self.graph.nodes)), size=1)
         self.arms_features = np.random.binomial(1, 0.5, size=(len(self.graph.edges), len(self.graph.nodes)))
         self.lam = Settings.LAMBDA
