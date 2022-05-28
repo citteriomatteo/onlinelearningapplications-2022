@@ -11,18 +11,23 @@ class Action:
 
     def set_page(self, page):
         self.page = page
+        return True
 
     def set_quantity_bought(self, quantity):
         self.quantity_bought = quantity
+        return True
 
     def set_click_second(self, value):
         self.click_second = value
+        return True
 
     def set_click_third(self, value):
         self.click_third = value
+        return True
 
     def set_page_close(self, value):
         self.page_close = value
+        return True
 
     def compute_for_pricing(self, graph):
         return True
@@ -35,7 +40,7 @@ class Action:
             graph.update_estimation(node=self.page.third, reward=1)
 
         if self.page_close:
-            """We put reward = 0 for the nodes that have been visualized but not clicked on. 
+            """ We put reward = 0 for the nodes that have been visualized but not clicked on. 
                     (still susceptible on close) """
             if self.page.second is not None:
                 if self.user.products_state[self.page.second.sequence_number] == 0:
@@ -43,6 +48,8 @@ class Action:
             if self.page.third is not None:
                 if self.user.products_state[self.page.third.sequence_number] == 0:
                     graph.update_estimation(node=self.page.third, reward=0)
+
+        return True
 
     def update_history(self, history):
         if self.click_second:
