@@ -112,11 +112,4 @@ class Simulator:
         return visited_products, num_bought_products
 
 
-graph = Graph(mode="reduced", weights=True)
-simulator = Simulator(graph=graph)
 
-customer = Customer(reservation_price=100, num_products=len(graph.nodes), graph=graph)
-v_p, n_p = simulator.simulate(customer=customer, num_prod=0)
-
-print(v_p)
-print(n_p)
