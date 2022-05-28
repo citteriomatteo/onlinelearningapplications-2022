@@ -4,5 +4,5 @@ import numpy as np
 LAMBDA = 1
 
 # Random probability of buying the primary product
-CONVERSION_RATE = 1
+CONVERSION_RATE = 0.5
 # CONVERSION_RATE = np.random.random()
