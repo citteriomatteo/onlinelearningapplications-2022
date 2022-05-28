@@ -4,7 +4,10 @@ class Page:
         self.primary = primary
         self.second = second
         self.third = third
+        self.bought = False
 
+    def set_bought(self, value):
+        self.bought = value
     '''
     Used for getting the formatted texts of the products (for a pretty CLI printing of the pages)
     '''

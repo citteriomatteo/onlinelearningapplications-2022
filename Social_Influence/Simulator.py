@@ -2,6 +2,7 @@ import numpy as np
 import random
 
 from Action import Action
+
 from Settings import LAMBDA, CONVERSION_RATE
 from Social_Influence.Customer import Customer
 from Social_Influence.Graph import Graph
@@ -33,7 +34,8 @@ class Simulator:
 
         primary = self.graph.nodes[num_prod]
         # TODO change the method for taking second and third
-        second, third, p2, p3 = self.graph.pull_arms(node1=primary, products_state=customer.products_state)
+        second = self.graph.search_product_by_number(self.secondaries[primary.sequence_number][0])
+        third = self.graph.search_product_by_number(self.secondaries[primary.sequence_number][1])
         page = Page(primary=primary, second=second, third=third)
         customer.click_on(page)
 
@@ -67,10 +69,11 @@ class Simulator:
             # -----------------------------------------------------------------------------------
             # 4: CUSTOMERS' CHOICE BETWEEN BUYING AND NOT BUYING THE PRIMARY PRODUCT
 
-            if np.random.random() < self.conversion_rates[primary.sequence_number][selected_prices[primary.sequence_number]]:  # PRIMARY PRODUCT BOUGHT
-                quantity = self.generateRandomQuantity(self.num_product_sold[num_prod][selected_prices[num_prod]])
+            if not page.bought and np.random.random() < self.conversion_rates[primary.sequence_number][selected_prices[primary.sequence_number]]:  # PRIMARY PRODUCT BOUGHT
+                quantity = self.generateRandomQuantity(self.num_product_sold[primary.sequence_number][selected_prices[primary.sequence_number]])
                 #print("· The customer buys the primary product in quantity: " + str(quantity) + "!")
                 customer.add_product(product=primary, quantity=quantity)
+                page.set_bought(True)
                 action.set_quantity_bought(quantity=quantity)
                 num_bought_products[page.primary.sequence_number] += quantity
 
@@ -83,8 +86,8 @@ class Simulator:
 
                     # CREATION OF THE NEW PAGE
                     new_primary = second
-                    new_second, new_third, new_p2, new_p3 = self.graph.pull_arms(node1=new_primary,
-                                                                                 products_state=customer.products_state)
+                    new_second = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][0])
+                    new_third = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][1])
 
                     # --- page creation and insertion in the list of customer's pages ---
                     new_page = Page(new_primary, new_second, new_third)
@@ -98,9 +101,8 @@ class Simulator:
 
                         # CREATION OF THE NEW PAGE
                         new_primary = third
-                        new_second, new_third, new_p2, new_p3 = self.graph.pull_arms(node1=new_primary,
-                                                                                     products_state=customer.
-                                                                                     products_state)
+                        new_second = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][0])
+                        new_third = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][1])
 
                         # --- page creation and insertion in the list of customer's pages ---
                         new_page = Page(new_primary, new_second, new_third)
@@ -121,7 +123,7 @@ class Simulator:
 
             t += 1
 
+        print(num_bought_products)
         return visited_products, num_bought_products
-
 
 
