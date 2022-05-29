@@ -33,7 +33,6 @@ class Simulator:
         num_bought_products = np.zeros(len(self.alpha_ratios)-1)
 
         primary = self.graph.nodes[num_prod]
-        # TODO change the method for taking second and third
         second = self.graph.search_product_by_number(self.secondaries[primary.sequence_number][0])
         third = self.graph.search_product_by_number(self.secondaries[primary.sequence_number][1])
         page = Page(primary=primary, second=second, third=third)
@@ -69,13 +68,14 @@ class Simulator:
             # -----------------------------------------------------------------------------------
             # 4: CUSTOMERS' CHOICE BETWEEN BUYING AND NOT BUYING THE PRIMARY PRODUCT
 
-            if not page.bought and np.random.random() < self.conversion_rates[primary.sequence_number][selected_prices[primary.sequence_number]]:  # PRIMARY PRODUCT BOUGHT
-                quantity = self.generateRandomQuantity(self.num_product_sold[primary.sequence_number][selected_prices[primary.sequence_number]])
-                #print("· The customer buys the primary product in quantity: " + str(quantity) + "!")
-                customer.add_product(product=primary, quantity=quantity)
-                page.set_bought(True)
-                action.set_quantity_bought(quantity=quantity)
-                num_bought_products[page.primary.sequence_number] += quantity
+            if np.random.random() < self.conversion_rates[primary.sequence_number][selected_prices[primary.sequence_number]]:  # PRIMARY PRODUCT BOUGHT
+                if not page.bought:
+                    quantity = self.generateRandomQuantity(self.num_product_sold[primary.sequence_number][selected_prices[primary.sequence_number]])
+                    #print("· The customer buys the primary product in quantity: " + str(quantity) + "!")
+                    customer.add_product(product=primary, quantity=quantity)
+                    page.set_bought(True)
+                    action.set_quantity_bought(quantity=quantity)
+                    num_bought_products[page.primary.sequence_number] += quantity
 
                 # -----------------------------------------------------------------------------------
                 # 5: CUSTOMERS' CLICK CHOICE BETWEEN: SECOND PRODUCT, THIRD PRODUCT OR CLOSE PAGE
@@ -124,6 +124,6 @@ class Simulator:
             t += 1
 
         print(num_bought_products)
-        return visited_products, num_bought_products
+        return visited_products, num_bought_products, num_prod
 
 
