@@ -1,6 +1,6 @@
 import random
 
-from Learner import *
+from Pricing.Learner import *
 from Pricing.pricingEnvironment import PricingEnvironment
 from Social_Influence.Graph import Graph
 

@@ -16,6 +16,7 @@ class Ucb(Learner):
         self.secondaries = secondaries
         self.currentBestArms = np.zeros(len(prices))
         self.num_product_sold = num_product_sold
+        self.n = np.zeros((self.n_products, self.n_arms))
 
     def reset(self):
         self.__init__(self.n_arms, self.prices, self.graph)
@@ -83,34 +84,51 @@ class Ucb(Learner):
         :return: none
         :rtype: none
         """
+
         self.currentBestArms = arm_pulled
         self.nearbyReward = self.totalNearbyRewardEstimation()
-        num_products = len(arm_pulled)
+        #num_products = len(arm_pulled)
+
         '''update mean for every arm pulled for every product'''
-        for prod in range(num_products):
+        for prod in range(self.n_products):
             self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
         '''update widths for every arm pulled for every product'''
-        for prod in range(num_products):
-            n = len(self.rewards_per_arm[prod][arm_pulled[prod]])
-            if n > 0:
-                self.widths[prod][arm_pulled[prod]] = np.sqrt((2 * np.max(np.log(self.t)) / n))
-            else:
-                self.widths[prod][arm_pulled[prod]] = np.inf
+        for prod in range(self.n_products):
+            for arm in range(self.n_arms):
+                self.n[prod,arm] = len(self.rewards_per_arm[prod][arm])
+                #print("Number of rewars 0 or 1 per:",prod,arm,n);
+                if (self.n[prod,arm]) > 0:
+                    self.widths[prod][arm] = np.sqrt((2 * np.max(np.log(self.t)) / self.n[prod,arm]))
+                else:
+                    self.widths[prod][arm] = np.inf
+
 
 
 graph = Graph(mode="full", weights=True)
 env = PricingEnvironment(4, graph, 1)
 learner = Ucb(4, env.prices[0], env.secondaries, env.num_product_sold[0], graph)
 
-for i in range(10000):
+for i in range(1000):
     if i == 50:
         aaa = 1
     pulled_arms = learner.act()
+    print("Pulled arm: ", pulled_arms)
+
     visited_products, num_bought_products = env.round(pulled_arms)
+    print("Vidited products: ", visited_products)
+    print("Number of product sold: ", num_bought_products)
+
     learner.updateHistory(pulled_arms, visited_products, num_bought_products)
+
     # TODO  non hardcodare
     if (i % 10 == 0) and (i != 0):
         learner.update(pulled_arms)
-    print(pulled_arms)
-print(learner.means)
-print(learner.widths)
+
+    print("Number of rewards per product:", learner.n)
+    print("T:",learner.t)
+    print("Means: ",learner.means)
+    print("Widths:",learner.widths)
+
+#print(learner.means)
+#print(learner.widths)
+

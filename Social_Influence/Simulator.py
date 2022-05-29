@@ -20,7 +20,7 @@ class Simulator:
     @staticmethod
     def generateRandomQuantity(mean):
         deviation = mean - 1
-        print("mean: "+str(mean) + " deviation: "+str(deviation))
+        #print("mean: "+str(mean) + " deviation: "+str(deviation))
         return random.randint(round(mean - deviation), round(mean + deviation))
 
     def simulate(self, selected_prices):
