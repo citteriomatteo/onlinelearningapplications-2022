@@ -37,8 +37,8 @@ class PricingEnvironment:
         :return: reward (0 or 1) for every product given the arm
         :rtype: list
         """
-        visited_products, num_bought_products = self.simulator.simulate(pulled_arm)
-        return visited_products, num_bought_products
+        visited_products, num_bought_products, num_primary = self.simulator.simulate(pulled_arm)
+        return visited_products, num_bought_products, num_primary
         '''num_product = len(pulled_arm)
         distributions = [0 for i in range(num_product)]
         for prod in range(num_product):
