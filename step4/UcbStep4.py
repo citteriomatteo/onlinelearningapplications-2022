@@ -77,7 +77,6 @@ class Ucb(Learner):
     def updateHistory(self, arm_pulled, visited_products, num_bought_products):
         super().update(arm_pulled, visited_products, num_bought_products)
 
-
     def update(self, arm_pulled):
         """
         update mean and widths
@@ -86,11 +85,7 @@ class Ucb(Learner):
         :return: none
         :rtype: none
         """
-
         self.currentBestArms = arm_pulled
-        self.nearbyReward = self.totalNearbyRewardEstimation()
-        #num_products = len(arm_pulled)
-
         '''update mean for every arm pulled for every product'''
         for prod in range(self.n_products):
             self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
@@ -104,7 +99,7 @@ class Ucb(Learner):
                     self.widths[prod][arm] = np.sqrt((2 * np.max(np.log(self.t)) / self.n[prod,arm]))
                 else:
                     self.widths[prod][arm] = np.inf
-
+        self.nearbyReward = self.totalNearbyRewardEstimation()
 
 
 
@@ -113,14 +108,14 @@ env = PricingEnvironment(4, graph, 1)
 learner = Ucb(4, env.prices[0], env.secondaries, graph)
 
 for i in range(10000):
-    if i == 50:
+    if i == 9990:
         aaa = 1
     pulled_arms = learner.act()
-    print("Pulled arm: ", pulled_arms)
+    #print("Pulled arm: ", pulled_arms)
 
     visited_products, num_bought_products, a = env.round(pulled_arms)
-    print("Vidited products: ", visited_products)
-    print("Number of product sold: ", num_bought_products)
+    #print("Vidited products: ", visited_products)
+    #print("Number of product sold: ", num_bought_products)
 
     learner.updateHistory(pulled_arms, visited_products, num_bought_products)
 
@@ -128,8 +123,12 @@ for i in range(10000):
     if (i % 10 == 0) and (i != 0):
         learner.update(pulled_arms)
 
-    print("Number of rewards per product:", learner.n)
+    '''print("Number of rewards per product:", learner.n)
     print("T:",learner.t)
     print("Means: ",learner.means)
     print("Widths:",learner.widths)
-    print("Estimated number of product sold: ",learner.num_product_sold_estimation)
+    print("Estimated number of product sold: ",learner.num_product_sold_estimation)'''
+print(learner.means)
+print(learner.widths)
+aaa = [i[j] for i,j in zip(learner.nearbyReward, learner.currentBestArms)]
+print(sum(aaa))

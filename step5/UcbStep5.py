@@ -37,6 +37,7 @@ class Ucb(Learner):
         # contains the conversion rate of the current best price for each product
         conversion_of_current_best = [i[j] for i,j in zip(self.means, self.currentBestArms)]
         price_of_current_best = np.array([i[j] for i, j in zip(self.prices, self.currentBestArms)])
+        num_product_sold_of_current_best = np.array([i[j] for i, j in zip(self.num_product_sold_estimation, self.currentBestArms)])
         nearbyRewardsTable = np.zeros(self.prices.shape)
         # it is created a list containing all the nodes/products that must be visited (initially all the products)
         nodesToVisit = [i for i in range(len(self.prices))]
@@ -44,7 +45,8 @@ class Ucb(Learner):
             # for each product and each price calculates its nearby reward
             for price in range(len(self.prices[0])):
                 nearbyRewardsTable[node][price] = sum(self.visit_probability_estimation[node] * self.means[node][price]
-                                                      * conversion_of_current_best * price_of_current_best)
+                                                      * conversion_of_current_best * price_of_current_best
+                                                      * num_product_sold_of_current_best)
         return nearbyRewardsTable
 
 
@@ -86,7 +88,7 @@ env = PricingEnvironment(4, graph, 1)
 learner = Ucb(4, env.prices[0], env.secondaries)
 
 for i in range(10000):
-    if i == 50:
+    if i == 9990:
         aaa = 1
     pulled_arms = learner.act()
     visited_products, num_bought_products, num_primary = env.round(pulled_arms)
@@ -97,4 +99,5 @@ for i in range(10000):
     print(pulled_arms)
 print(learner.means)
 print(learner.widths)
-print(learner.nearbyReward)
+aaa = [i[j] for i,j in zip(learner.nearbyReward, learner.currentBestArms)]
+print(sum(aaa))
