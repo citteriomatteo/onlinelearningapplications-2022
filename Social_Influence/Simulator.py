@@ -123,7 +123,7 @@ class Simulator:
 
             t += 1
 
-        print(num_bought_products)
+        #print(num_bought_products)
         return visited_products, num_bought_products, num_prod
 
 
