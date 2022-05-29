@@ -114,7 +114,7 @@ for i in range(1000):
     pulled_arms = learner.act()
     print("Pulled arm: ", pulled_arms)
 
-    visited_products, num_bought_products = env.round(pulled_arms)
+    visited_products, num_bought_products, a = env.round(pulled_arms)
     print("Vidited products: ", visited_products)
     print("Number of product sold: ", num_bought_products)
 

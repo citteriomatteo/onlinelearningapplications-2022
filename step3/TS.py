@@ -143,7 +143,7 @@ learner = TS(4, env.prices[0], env.secondaries, env.num_product_sold[0], graph)
 
 for i in range(10000):
     pulled_arms = learner.pull_arm()
-    visited_products, num_bought_products = env.round(pulled_arms)
+    visited_products, num_bought_products, a = env.round(pulled_arms)
     learner.update(pulled_arms, visited_products, num_bought_products)
     if (i % 10 == 0) and (i != 0):
         learner.update_beta_distributions()

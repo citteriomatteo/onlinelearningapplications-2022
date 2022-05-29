@@ -148,7 +148,7 @@ for i in range(10000):
     if i == 50:
         aaa = 1
     pulled_arms = learner.pull_arm()
-    visited_products, num_bought_products = env.round(pulled_arms)
+    visited_products, num_bought_products, a = env.round(pulled_arms)
     learner.update(pulled_arms, visited_products, num_bought_products)
     if (i % 10 == 0) and (i != 0):
         learner.update_beta_distributions()
