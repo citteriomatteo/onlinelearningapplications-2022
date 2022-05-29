@@ -131,4 +131,5 @@ for i in range(1000):
 
 #print(learner.means)
 #print(learner.widths)
+print((learner.widths + learner.means) * ((learner.prices*learner.num_product_sold) + learner.nearbyReward))
 

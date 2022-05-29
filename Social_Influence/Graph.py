@@ -54,12 +54,14 @@ class Graph:
         for edge in data["edges"]:
             node1 = self.search_product_by_name(edge["node1"])
             node2 = self.search_product_by_name(edge["node2"])
+            prob = edge['probability']
             x[node1.sequence_number, node2.sequence_number] = 1
             if not weights:
                 self.edges.append(Edge(node1=node1, node2=node2))
             else:
                 self.edges.append(Edge(node1=node1, node2=node2, probability=edge["probability"]))
 
+        aaa = 1
         # DUMMY EDGE WITH PROBABILITY 0: USEFUL WHEN ALL NODES ARE ACTIVE/INACTIVE
         self.dummy_edge = Edge(node1=None, node2=None, probability=0.0)
 

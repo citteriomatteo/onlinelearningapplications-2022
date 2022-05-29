@@ -16,6 +16,9 @@ class TS(Learner):
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.secondaries = secondaries
         self.num_product_sold_estimation = np.ones(prices.shape)
+        self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
+        self.times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
+        self.times_visited_as_first_node = np.zeros(self.n_products)
 
     def pull_arm(self):
         """
@@ -37,7 +40,7 @@ class TS(Learner):
         # print("arm pulled", idx)
         return idx
 
-    def update(self, pulled_arm, visited_products, num_bought_products):
+    def update(self, pulled_arm, visited_products, num_bought_products, num_primary):
         """
         update alpha and beta parameters
         :param pulled_arm: arm pulled for every product
@@ -48,6 +51,10 @@ class TS(Learner):
         :rtype: none
         """
         super(TS, self).update(pulled_arm, visited_products, num_bought_products)
+        self.times_visited_as_first_node[num_primary] += 1
+        for i in range(len(visited_products)):
+            if (visited_products[i] == 1) and i != num_primary:
+                self.times_visited_from_starting_node[num_primary][i] += 1
         for prod in range(self.n_products):
             if visited_products[prod] == 1:
                 if num_bought_products[prod] > 0:
@@ -66,6 +73,8 @@ class TS(Learner):
         self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] \
                                         + self.pulled_per_arm_batch - self.success_per_arm_batch
         for prod in range(self.n_products):
+            self.visit_probability_estimation[prod] = self.times_visited_from_starting_node[prod] / \
+                                                      self.times_visited_as_first_node[prod]
             for price in range(self.n_arms):
                 self.num_product_sold_estimation[prod][price] = np.mean(self.boughts_per_arm[prod][price])
 

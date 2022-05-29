@@ -7,7 +7,7 @@ from Social_Influence.Graph import Graph
 
 class Greedy_Learner(Learner):
 
-    def __init__(self, prices, conversion_rates, classes, secondaries, num_product_sold):
+    def __init__(self, prices, conversion_rates, classes, secondaries, num_product_sold, graph):
         """
 
         :param prices: list of products and each product is a list of prices
@@ -24,6 +24,7 @@ class Greedy_Learner(Learner):
         self.classes = classes
         self.secondaries = secondaries
         self.num_product_sold = num_product_sold
+        self.graph = graph
         super().__init__(self.n_arms, self.n_products)
 
         # for each class save the list of arm to pull for each product (3x5)
@@ -75,6 +76,10 @@ class Greedy_Learner(Learner):
         for i in range(self.n_products):
             conversion_for_best_arms = [i[j] for i, j in zip(self.conversion_rates[chosen_class],
                                                              self.max_idxs[chosen_class])]
+            aaa = (self.prices[chosen_class][i][arms[i]] * self.conversion_rates[chosen_class][i][arms[i]]
+                   * self.num_product_sold[chosen_class][i][arms[i]])
+            bbb = self.singleNearbyRewardEstimation(self.calculateNodesToVisit(i), conversion_for_best_arms, i,
+                                                    self.conversion_rates[chosen_class][i][arms[i]], chosen_class)
             revenue += (self.prices[chosen_class][i][arms[i]] * self.conversion_rates[chosen_class][i][arms[i]]
                         * self.num_product_sold[chosen_class][i][arms[i]]) + self.singleNearbyRewardEstimation \
                            (self.calculateNodesToVisit(i), conversion_for_best_arms, i,
@@ -98,8 +103,11 @@ class Greedy_Learner(Learner):
         for j in (list(set(nodes_to_visit).intersection(self.secondaries[product]))):
             # the probability from a node to visit another one is given by the edge of the graph connecting the two
             # nodes/products
-            probability_to_visit_secondary = graph.search_edge_by_nodes(graph.search_product_by_number(product),
-                                                                        graph.search_product_by_number(j)).probability
+            node1 = self.graph.search_product_by_number(product)
+            node2 = self.graph.search_product_by_number(j)
+            edge = self.graph.search_edge_by_nodes(node1,node2)
+            probability_to_visit_secondary = self.graph.search_edge_by_nodes(self.graph.search_product_by_number(product),
+                                                                        self.graph.search_product_by_number(j)).probability
             # the chance of buying a secondary product is given by the probability of visiting it, the probability
             # to buy the primary and the probability to buy the secondary once its page is reached (its
             # conversion rate)
@@ -140,9 +148,10 @@ class Greedy_Learner(Learner):
                 self.classes_probability[chosen_class] = 0
 
 
-graph = Graph(mode="full", weights=True)
-env = PricingEnvironment(4, graph, 1)
-learner = Greedy_Learner(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold)
+graph_sample = Graph(mode="full", weights=True)
+env = PricingEnvironment(4, graph_sample, 1)
+learner = Greedy_Learner(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold,
+                         graph_sample)
 learner.update()
 print('\nFINAL')
 print(learner.max_idxs)
