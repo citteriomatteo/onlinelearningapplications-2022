@@ -1,21 +1,21 @@
 import numpy as np
-from Learner import *
+from Pricing.Learner import *
 from Pricing.pricingEnvironment import PricingEnvironment
 from Social_Influence.Graph import Graph
 
 
 class Ucb(Learner):
-    def __init__(self, n_arms, prices, secondaries, num_product_sold, graph):
+    def __init__(self, n_arms, prices, secondaries, graph):
         super().__init__(n_arms, len(prices))
         self.prices = prices
         self.pricesMeanPerProduct = np.mean(self.prices, 1)
         self.means = np.zeros(prices.shape)
+        self.num_product_sold_estimation = np.ones(prices.shape)
         self.nearbyReward = np.zeros(prices.shape)
         self.widths = np.ones(prices.shape) * np.inf
         self.graph = graph
         self.secondaries = secondaries
         self.currentBestArms = np.zeros(len(prices))
-        self.num_product_sold = num_product_sold
 
     def reset(self):
         self.__init__(self.n_arms, self.prices, self.graph)
@@ -25,7 +25,7 @@ class Ucb(Learner):
         :return: for each product returns the arm to pull based on which one gives the highest reward
         :rtype: int
         """
-        idx = np.argmax((self.widths + self.means) * ((self.prices*self.num_product_sold) + self.nearbyReward), axis=1)
+        idx = np.argmax((self.widths + self.means) * ((self.prices*self.num_product_sold_estimation) + self.nearbyReward), axis=1)
         return idx
 
     def totalNearbyRewardEstimation(self):
@@ -62,7 +62,8 @@ class Ucb(Learner):
             # to buy the primary and the probability to buy the secondary once its page is reached (its
             # conversion rate)
             probToBuyASecondary = conversion_estimation_for_best_arms[j] * probabilityToVisitSecondary * probabilityToEnter
-            valueToReturn += self.prices[j][self.currentBestArms[j]] * probToBuyASecondary * self.num_product_sold[j][self.currentBestArms[j]]
+            valueToReturn += self.prices[j][self.currentBestArms[j]] * probToBuyASecondary \
+                             * self.num_product_sold_estimation[j][self.currentBestArms[j]]
             # the tree must be ran across deeper, but it is useless to visit it if the chance of reaching a deeper node
             # is almost zero, so it is checked how much probable it is to going deeper before
             # doing the other calculations
@@ -89,6 +90,7 @@ class Ucb(Learner):
         '''update mean for every arm pulled for every product'''
         for prod in range(num_products):
             self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
+            self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(self.boughts_per_arm[prod][arm_pulled[prod]])
         '''update widths for every arm pulled for every product'''
         for prod in range(num_products):
             n = len(self.rewards_per_arm[prod][arm_pulled[prod]])
@@ -100,7 +102,7 @@ class Ucb(Learner):
 
 graph = Graph(mode="full", weights=True)
 env = PricingEnvironment(4, graph, 1)
-learner = Ucb(4, env.prices[0], env.secondaries, env.num_product_sold[0], graph)
+learner = Ucb(4, env.prices[0], env.secondaries, graph)
 
 for i in range(10000):
     if i == 50:

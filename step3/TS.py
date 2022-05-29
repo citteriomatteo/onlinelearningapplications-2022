@@ -1,5 +1,5 @@
 import numpy as np
-from Learner import *
+from Pricing.Learner import *
 from Pricing.pricingEnvironment import PricingEnvironment
 from Settings import LAMBDA
 from Social_Influence.Graph import Graph

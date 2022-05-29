@@ -3,7 +3,7 @@ import numpy as np
 import Settings
 from Social_Influence.Graph import Graph
 from Social_Influence.Simulator import Simulator
-from user_data_generator import StandardDataGenerator
+from Pricing.user_data_generator import StandardDataGenerator
 
 
 class PricingEnvironment:
