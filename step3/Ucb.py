@@ -53,6 +53,7 @@ class Ucb(Learner):
         :rtype: float
         """
         valueToReturn = 0
+        isSecondary = True
         # for each node that is possible to visit from the starting one, calculates its nearby reward
         for j in (list(set(nodesToVisit).intersection(self.secondaries[product]))):
             # the probability from a node to visit another one is given by the edge of the graph connecting the two
@@ -62,6 +63,9 @@ class Ucb(Learner):
             # the chance of buying a secondary product is given by the probability of visiting it, the probability
             # to buy the primary and the probability to buy the secondary once its page is reached (its
             # conversion rate)
+            if not isSecondary:
+                probabilityToVisitSecondary = probabilityToVisitSecondary * Settings.LAMBDA
+            isSecondary = False
             probToBuyASecondary = conversion_estimation_for_best_arms[j] * probabilityToVisitSecondary * probabilityToEnter
             valueToReturn += self.prices[j][self.currentBestArms[j]] * probToBuyASecondary * self.num_product_sold[j][self.currentBestArms[j]]
             # the tree must be ran across deeper, but it is useless to visit it if the chance of reaching a deeper node

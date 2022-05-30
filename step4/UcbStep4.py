@@ -1,4 +1,6 @@
 import numpy as np
+
+import Settings
 from Pricing.Learner import *
 from Pricing.pricingEnvironment import PricingEnvironment
 from Social_Influence.Graph import Graph
@@ -53,12 +55,16 @@ class Ucb(Learner):
         :rtype: float
         """
         valueToReturn = 0
+        isSecondary = True
         # for each node that is possible to visit from the starting one, calculates its nearby reward
         for j in (list(set(nodesToVisit).intersection(self.secondaries[product]))):
             # the probability from a node to visit another one is given by the edge of the graph connecting the two
             # nodes/products
             probabilityToVisitSecondary = graph.search_edge_by_nodes(graph.search_product_by_number(product),
                                                                      graph.search_product_by_number(j)).probability
+            if not isSecondary:
+                probabilityToVisitSecondary = probabilityToVisitSecondary * Settings.LAMBDA
+            isSecondary = False
             # the chance of buying a secondary product is given by the probability of visiting it, the probability
             # to buy the primary and the probability to buy the secondary once its page is reached (its
             # conversion rate)
@@ -111,7 +117,7 @@ for i in range(10000):
     if i == 9990:
         aaa = 1
     pulled_arms = learner.act()
-    #print("Pulled arm: ", pulled_arms)
+    print(pulled_arms)
 
     visited_products, num_bought_products, a = env.round(pulled_arms)
     #print("Vidited products: ", visited_products)
@@ -130,5 +136,6 @@ for i in range(10000):
     print("Estimated number of product sold: ",learner.num_product_sold_estimation)'''
 print(learner.means)
 print(learner.widths)
-aaa = [i[j] for i,j in zip(learner.nearbyReward, learner.currentBestArms)]
+aaa = [i[j] for i, j in zip(learner.nearbyReward, learner.currentBestArms)]
+print(aaa)
 print(sum(aaa))

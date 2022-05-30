@@ -51,10 +51,10 @@ class TS(Learner):
         :rtype: none
         """
         super(TS, self).update(pulled_arm, visited_products, num_bought_products)
-        self.times_visited_as_first_node[num_primary] += 1
+        self.times_visited_as_first_node[num_primary][pulled_arm[num_primary]] += 1
         for i in range(len(visited_products)):
             if (visited_products[i] == 1) and i != num_primary:
-                self.times_visited_from_starting_node[num_primary][i] += 1
+                self.times_visited_from_starting_node[num_primary][pulled_arm[num_primary]][i] += 1
         for prod in range(self.n_products):
             if visited_products[prod] == 1:
                 if num_bought_products[prod] > 0:

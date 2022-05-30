@@ -15,9 +15,9 @@ class Ucb(Learner):
         self.widths = np.ones(prices.shape) * np.inf
         self.secondaries = secondaries
         self.currentBestArms = np.zeros(len(prices))
-        self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
-        self.times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
-        self.times_visited_as_first_node = np.zeros(self.n_products)
+        self.visit_probability_estimation = np.zeros((self.n_products, self.n_arms, self.n_products))
+        self.times_visited_from_starting_node = np.zeros((self.n_products, self.n_arms, self.n_products))
+        self.times_visited_as_first_node = np.zeros((self.n_products, self.n_arms, self.n_products))
 
     def reset(self):
         self.__init__(self.n_arms, self.prices)
@@ -44,7 +44,7 @@ class Ucb(Learner):
         for node in nodesToVisit:
             # for each product and each price calculates its nearby reward
             for price in range(len(self.prices[0])):
-                nearbyRewardsTable[node][price] = sum(self.visit_probability_estimation[node] * self.means[node][price]
+                nearbyRewardsTable[node][price] = sum(self.visit_probability_estimation[node][price]
                                                       * conversion_of_current_best * price_of_current_best
                                                       * num_product_sold_of_current_best)
         return nearbyRewardsTable
@@ -52,10 +52,10 @@ class Ucb(Learner):
 
     def updateHistory(self, arm_pulled, visited_products, num_bought_products, num_primary):
         super().update(arm_pulled, visited_products, num_bought_products)
-        self.times_visited_as_first_node[num_primary] += 1
+        self.times_visited_as_first_node[num_primary][arm_pulled[num_primary]] += 1
         for i in range(len(visited_products)):
             if (visited_products[i] == 1) and i != num_primary:
-                self.times_visited_from_starting_node[num_primary][i] += 1
+                self.times_visited_from_starting_node[num_primary][arm_pulled[num_primary]][i] += 1
 
     def update(self, arm_pulled):
         """
@@ -100,4 +100,5 @@ for i in range(10000):
 print(learner.means)
 print(learner.widths)
 aaa = [i[j] for i,j in zip(learner.nearbyReward, learner.currentBestArms)]
+print(aaa)
 print(sum(aaa))
