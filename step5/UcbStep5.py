@@ -18,6 +18,7 @@ class Ucb(Learner):
         self.visit_probability_estimation = np.zeros((self.n_products, self.n_arms, self.n_products))
         self.times_visited_from_starting_node = np.zeros((self.n_products, self.n_arms, self.n_products))
         self.times_visited_as_first_node = np.zeros((self.n_products, self.n_arms, self.n_products))
+        self.n = np.zeros((self.n_products, self.n_arms))
 
     def reset(self):
         self.__init__(self.n_arms, self.prices)
@@ -65,6 +66,8 @@ class Ucb(Learner):
         :return: none
         :rtype: none
         """
+
+        #DA CAMBIARE UCB
         self.currentBestArms = arm_pulled
         num_products = len(arm_pulled)
         '''update mean for every arm pulled for every product'''
@@ -74,11 +77,12 @@ class Ucb(Learner):
             self.visit_probability_estimation[prod] = self.times_visited_from_starting_node[prod] / self.times_visited_as_first_node[prod]
         '''update widths for every arm pulled for every product'''
         for prod in range(num_products):
-            n = len(self.rewards_per_arm[prod][arm_pulled[prod]])
-            if n > 0:
-                self.widths[prod][arm_pulled[prod]] = np.sqrt((2 * np.max(np.log(self.t)) / n))
-            else:
-                self.widths[prod][arm_pulled[prod]] = np.inf
+            for arm in range(self.n_arms):
+                self.n[prod,arm] = len(self.rewards_per_arm[prod][arm])
+                if n[prod,arm] > 0:
+                    self.widths[prod][arm] = np.sqrt((2 * np.max(np.log(self.t)) / n))
+                else:
+                    self.widths[prod][arm] = np.inf
         self.nearbyReward = self.totalNearbyRewardEstimation()
         aaa = 1
 

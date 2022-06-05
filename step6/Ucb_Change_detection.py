@@ -3,7 +3,7 @@ from Cumulative_sum import *
 from Pricing import Learner
 
 class Ucv_Change_detection(Learner):
-    def __init__(self,n_arms, prices, secondaries, M=100,eps=0.05,h=20,alpha=0.01):
+    def __init__(self,n_arms, prices, secondaries, M=100,eps=0.05,h=20, alpha=0.01):
         super().__init__(n_arms, len(prices))
         self.prices = prices
         self.pricesMeanPerProduct = np.mean(self.prices, 1)
@@ -21,6 +21,23 @@ class Ucv_Change_detection(Learner):
         self.valid_reward_per_arms=[[] for _ in range(n_arms)]
         self.detections = [[] for _ in range(n_arms)]
         self.alpha = alpha
+
+    def act(self):
+        """
+        :return: for each product returns the arm to pull based on which one gives the highest reward
+        :rtype: int
+        """
+        if np.random.binomial(1, 1 - self.alpha):
+            idx = np.argmax((self.widths + self.means) * ((self.prices*self.num_product_sold_estimation) + self.nearbyReward), axis=1)
+            return idx
+        else:
+            cost_random = np.random.randint(0, 10, size=self.prices)
+            idx = np.argmax((cost_random),axis=1)
+            return idx;
+
+
+
+
 
 '''''''''
     def pull_arm(self):
@@ -59,3 +76,4 @@ class Ucv_Change_detection(Learner):
         self.collected_rewards = np.append(self.collected_rewards,reward)
         
 '''''''''
+

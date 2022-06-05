@@ -92,15 +92,12 @@ class Ucb(Learner):
         :rtype: none
         """
         self.currentBestArms = arm_pulled
-        '''update mean for every arm pulled for every product'''
         for prod in range(self.n_products):
             self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
             self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(self.boughts_per_arm[prod][arm_pulled[prod]])
-        '''update widths for every arm pulled for every product'''
         for prod in range(self.n_products):
             for arm in range(self.n_arms):
                 self.n[prod,arm] = len(self.rewards_per_arm[prod][arm])
-                #print("Number of rewars 0 or 1 per:",prod,arm,n);
                 if (self.n[prod,arm]) > 0:
                     self.widths[prod][arm] = np.sqrt((2 * np.max(np.log(self.t)) / self.n[prod,arm]))
                 else:
