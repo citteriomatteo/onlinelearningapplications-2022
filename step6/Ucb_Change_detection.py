@@ -33,7 +33,9 @@ class Ucv_Change_detection(Learner):
         else:
             cost_random = np.random.randint(0, 10, size=self.prices)
             idx = np.argmax((cost_random),axis=1)
-            return idx;
+            return idx
+
+
 
 
 

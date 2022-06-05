@@ -79,7 +79,7 @@ class Ucb(Learner):
         for prod in range(num_products):
             for arm in range(self.n_arms):
                 self.n[prod,arm] = len(self.rewards_per_arm[prod][arm])
-                if n[prod,arm] > 0:
+                if self.n[prod,arm] > 0:
                     self.widths[prod][arm] = np.sqrt((2 * np.max(np.log(self.t)) / n))
                 else:
                     self.widths[prod][arm] = np.inf
