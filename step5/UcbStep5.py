@@ -67,7 +67,6 @@ class Ucb(Learner):
         :rtype: none
         """
 
-        #DA CAMBIARE UCB
         self.currentBestArms = arm_pulled
         num_products = len(arm_pulled)
         '''update mean for every arm pulled for every product'''
@@ -80,7 +79,7 @@ class Ucb(Learner):
             for arm in range(self.n_arms):
                 self.n[prod,arm] = len(self.rewards_per_arm[prod][arm])
                 if self.n[prod,arm] > 0:
-                    self.widths[prod][arm] = np.sqrt((2 * np.max(np.log(self.t)) / n))
+                    self.widths[prod][arm] = np.sqrt((2 * np.max(np.log(self.t)) / self.n[prod,arm]))
                 else:
                     self.widths[prod][arm] = np.inf
         self.nearbyReward = self.totalNearbyRewardEstimation()
