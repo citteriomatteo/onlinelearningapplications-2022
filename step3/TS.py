@@ -16,6 +16,7 @@ class TS(Learner):
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.secondaries = secondaries
         self.num_product_sold = num_product_sold
+        self.nearbyReward = np.zeros(prices.shape)
 
     def pull_arm(self):
         """
@@ -28,8 +29,7 @@ class TS(Learner):
             # generate beta for every price of the current product
             beta = np.random.beta(self.beta_parameters[prod, :, 0], self.beta_parameters[prod, :, 1])
             # arm of the current product with highest expected reward
-            # TODO: add expected reward
-            idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold[prod])))
+            idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold[prod]) + self.nearbyReward[prod]))
             # print("rewards prod %d: %s" % (prod, beta * self.prices[prod]))
             # print("NEARBY REWARDS - old - %d: %s" % (prod, self.expected_nearby_reward(prod)[prod]))
             # print("NEARBY REWARDS -check- %d: %s" % (prod, self.reward_of_node_without_nearby(prod)[prod]))
@@ -47,6 +47,9 @@ class TS(Learner):
         :return: none
         :rtype: none
         """
+
+        self.nearbyReward = [self.nearby_reward(node) for node in range(self.n_products)]
+
         super(TS, self).update(pulled_arm, visited_products, num_bought_products)
         for prod in range(self.n_products):
             if visited_products[prod] == 1:
@@ -75,8 +78,9 @@ class TS(Learner):
 
         expected_reward_actual_node = np.zeros(self.n_arms)
 
+        secondary_not_already_visited = (list(set(node_to_visit).intersection(self.secondaries[actual_node])))
         probability_to_observe = 1
-        for node in (list(set(node_to_visit).intersection(self.secondaries[actual_node]))):
+        for node in secondary_not_already_visited:
             # delete the actual_node from the node to visit
             new_node_to_visit = node_to_visit.copy()
             new_node_to_visit.remove(node)
@@ -84,7 +88,7 @@ class TS(Learner):
             # probability to click node (probability_to_observe will be 1 for the first node and LAMBDA for the second)
             prob_to_clik_node = probability_to_observe * graph.search_edge_by_nodes(
                 graph.search_product_by_number(actual_node),
-                graph.search_product_by_number(node)).probability[0]  # senza [0] è un array con un elemento
+                graph.search_product_by_number(node)).probability
 
             expected_reward_actual_node += prob_to_clik_node * self.expected_reward(node, new_node_to_visit)
 
@@ -128,7 +132,7 @@ class TS(Learner):
             # probability to click node (probability_to_observe will be 1 for the first node and LAMBDA for the second)
             prob_to_clik_node = probability_to_observe * graph.search_edge_by_nodes(
                 graph.search_product_by_number(actual_node),
-                graph.search_product_by_number(node)).probability[0]  # senza [0] è un array con un elemento
+                graph.search_product_by_number(node)).probability
 
             expected_reward_actual_node += prob_to_clik_node * self.expected_reward(node, new_node_to_visit)
 
