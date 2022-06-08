@@ -5,10 +5,10 @@ from Social_Influence.Graph import Graph
 
 
 class Ucb(Learner):
-    def __init__(self, n_arms, prices, secondaries):
+    def __init__(self, n_arms, prices, secondaries, mean=np.mean(self.prices, 1)):
         super().__init__(n_arms, len(prices))
         self.prices = prices
-        self.pricesMeanPerProduct = np.mean(self.prices, 1)
+        self.pricesMeanPerProduct = mean
         self.means = np.zeros(prices.shape)
         self.num_product_sold_estimation = np.ones(prices.shape)
         self.nearbyReward = np.zeros(prices.shape)
