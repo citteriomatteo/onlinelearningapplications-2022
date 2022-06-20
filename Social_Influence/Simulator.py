@@ -20,7 +20,7 @@ class Simulator:
     @staticmethod
     def generateRandomQuantity(mean):
         deviation = mean - 1
-        #print("mean: "+str(mean) + " deviation: "+str(deviation))
+        # print("mean: "+str(mean) + " deviation: "+str(deviation))
         return random.randint(round(mean - deviation), round(mean + deviation))
 
     def simulate(self, selected_prices):
@@ -29,8 +29,8 @@ class Simulator:
         num_prod = random.choices([0, 1, 2, 3, 4], self.alpha_ratios[1:], k=1)[0]
 
         t = 0
-        visited_products = np.zeros(len(self.alpha_ratios)-1)
-        num_bought_products = np.zeros(len(self.alpha_ratios)-1)
+        visited_products = np.zeros(len(self.alpha_ratios) - 1)
+        num_bought_products = np.zeros(len(self.alpha_ratios) - 1)
 
         primary = self.graph.nodes[num_prod]
         second = self.graph.search_product_by_number(self.secondaries[primary.sequence_number][0])
@@ -68,10 +68,12 @@ class Simulator:
             # -----------------------------------------------------------------------------------
             # 4: CUSTOMERS' CHOICE BETWEEN BUYING AND NOT BUYING THE PRIMARY PRODUCT
 
-            if np.random.random() < self.conversion_rates[primary.sequence_number][selected_prices[primary.sequence_number]]:  # PRIMARY PRODUCT BOUGHT
+            if np.random.random() < self.conversion_rates[primary.sequence_number][
+                selected_prices[primary.sequence_number]]:  # PRIMARY PRODUCT BOUGHT
                 if not page.bought:
-                    quantity = self.generateRandomQuantity(self.num_product_sold[primary.sequence_number][selected_prices[primary.sequence_number]])
-                    #print("· The customer buys the primary product in quantity: " + str(quantity) + "!")
+                    quantity = self.generateRandomQuantity(
+                        self.num_product_sold[primary.sequence_number][selected_prices[primary.sequence_number]])
+                    # print("· The customer buys the primary product in quantity: " + str(quantity) + "!")
                     customer.add_product(product=primary, quantity=quantity)
                     page.set_bought(True)
                     action.set_quantity_bought(quantity=quantity)
@@ -101,8 +103,10 @@ class Simulator:
 
                         # CREATION OF THE NEW PAGE
                         new_primary = third
-                        new_second = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][0])
-                        new_third = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][1])
+                        new_second = self.graph.search_product_by_number(
+                            self.secondaries[new_primary.sequence_number][0])
+                        new_third = self.graph.search_product_by_number(
+                            self.secondaries[new_primary.sequence_number][1])
 
                         # --- page creation and insertion in the list of customer's pages ---
                         new_page = Page(new_primary, new_second, new_third)
@@ -123,7 +127,7 @@ class Simulator:
 
             t += 1
 
-        #print(num_bought_products)
+        # print(num_bought_products)
         return visited_products, num_bought_products, num_prod
 
 
