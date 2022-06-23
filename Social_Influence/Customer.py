@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 
 class Customer:
@@ -14,6 +15,7 @@ class Customer:
         self.graph = graph
         self.pages = []
         self.cart = []
+        self.features = self.get_randomized_features()
 
 
     def set_susceptible(self, prod_number):
@@ -54,6 +56,16 @@ class Customer:
             return True
 
         return False
+
+    def get_randomized_features(self):
+        """
+        randomizes the features for the customer
+        """
+        features = []
+        for i in range(2):
+            features.append(random.choice([True, False]))
+
+        return features
 
     def print_all_pages(self):
         first_prods = ""

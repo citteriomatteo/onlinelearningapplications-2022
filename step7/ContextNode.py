@@ -1,14 +1,12 @@
 import copy
 
-from Pricing import Learner
-
 
 class ContextNode:
     def __init__(self, features, base_learner):
         self.left_child: ContextNode = None
         self.right_child: ContextNode = None
         self.features: dict = features
-        self.base_learner: Learner = base_learner
+        self.base_learner = base_learner
         self.features_subspace: dict = {}
 
     def is_leaf(self) -> bool:
@@ -21,7 +19,7 @@ class ContextNode:
         """
         Check if the node already covers all the available features.
         """
-        return len(self.feature_subspace.keys()) < len(self.all_features)
+        return len(self.features_subspace.keys()) < len(self.features)
 
     def get_leaves(self):
         """ Recursive method that returns the leaves of the tree. """

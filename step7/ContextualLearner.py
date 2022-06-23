@@ -1,4 +1,3 @@
-import numpy as np
 
 from Pricing.Learner import Learner
 
@@ -13,8 +12,10 @@ class ContextualLearner(Learner):
     def update_context_tree(self, new_context_tree):
         self.context_tree = new_context_tree
 
+    def get_root_learner(self):
+        return self.context_tree.base_learner
+
     def get_learner_by_context(self, current_features):
-        # TODO: probably a faster way can be achieved by using the get_leaves method
         # navigation of the tree up to the leaf with the correct context
         cur_node = self.context_tree
         navigate = True
@@ -46,35 +47,4 @@ class ContextualLearner(Learner):
                     raise NotImplementedError("An error occurs: neither the left and the right child are compliant "
                                               "with the given features.")
         return cur_node.base_learner
-
-    def pull_arm(self, user_features):
-        """ get a structure of arm to pull according to the context """
-
-        return self.get_learner_by_context(user_features).act()
-
-    def update(self, daily_reward, pulled_arms, user_features):
-        # scan and divide according to the features
-        leaves = self.context_tree.get_leaves()
-        distributions = np.zeros(len(leaves))
-        for i, obs in enumerate(daily_reward):
-            # i -> index used to scan the data received by the environment
-            update_done = False
-            for idx, leaf in enumerate(leaves):
-                leaf_subspace = leaf.feature_subspace
-                good_leaf = True
-                for feature in leaf_subspace:
-                    feature_idx = self.features.index(feature)
-                    if user_features[i][feature_idx] != leaf_subspace[feature]:
-                        good_leaf = False
-                        break
-                if good_leaf:
-                    leaf.base_learner.update(pulled_arms[i], obs[0], obs[1])
-                    update_done = True
-                    distributions[idx] += 1
-                    break
-            if not update_done:
-                raise AttributeError
-        return distributions.tolist()
-
-
 

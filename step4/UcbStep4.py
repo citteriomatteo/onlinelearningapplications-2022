@@ -111,6 +111,7 @@ env = PricingEnvironment(4, graph, 1)
 learner = Ucb(4, env.prices[0], env.secondaries, graph)
 
 for i in range(10000):
+
     if i == 9990:
         aaa = 1
     pulled_arms = learner.act()

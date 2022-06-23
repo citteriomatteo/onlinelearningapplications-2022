@@ -27,18 +27,14 @@ class PricingEnvironment:
         self.arms_features = np.random.binomial(1, 0.5, size=(len(self.graph.edges), len(self.graph.nodes)))
         self.lam = Settings.LAMBDA
 
-    def round(self, pulled_arm):
+    def round(self, pulled_arm, customer=None):
         """
-
+        :param customer: optional parameter needed for step7 (customer context must be known before the simulation!)
         :param pulled_arm: arm pulled for each product
         :type pulled_arm: list
         :return: reward (0 or 1) for every product given the arm
         :rtype: list
         """
-        visited_products, num_bought_products, num_primary = self.simulator.simulate(pulled_arm)
+        visited_products, num_bought_products, num_primary = self.simulator.simulate(selected_prices=pulled_arm,
+                                                                                     customer=customer)
         return visited_products, num_bought_products, num_primary
-        '''num_product = len(pulled_arm)
-        distributions = [0 for i in range(num_product)]
-        for prod in range(num_product):
-            distributions[prod] = np.random.binomial(1, self.conversion_rates[0][prod][pulled_arm[prod]])
-        return distributions'''

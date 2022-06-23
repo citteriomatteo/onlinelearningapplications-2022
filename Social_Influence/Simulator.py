@@ -23,9 +23,11 @@ class Simulator:
         # print("mean: "+str(mean) + " deviation: "+str(deviation))
         return random.randint(round(mean - deviation), round(mean + deviation))
 
-    def simulate(self, selected_prices):
+    def simulate(self, selected_prices, customer=None):
 
-        customer = Customer(reservation_price=100, num_products=len(self.graph.nodes), graph=self.graph)
+        if customer is None:
+            customer = Customer(reservation_price=100, num_products=len(self.graph.nodes), graph=self.graph)
+
         num_prod = random.choices([0, 1, 2, 3, 4], self.alpha_ratios[1:], k=1)[0]
 
         t = 0
@@ -123,11 +125,7 @@ class Simulator:
                 #print("· The customer closes the page without buying.")
                 customer.close_page(page)
 
-            action.compute_for_social_influence(graph=self.graph)
-
             t += 1
 
         # print(num_bought_products)
         return visited_products, num_bought_products, num_prod
-
-

@@ -31,6 +31,14 @@ class Ucb(Learner):
         idx = np.argmax((self.widths + self.means) * ((self.prices*self.num_product_sold_estimation) + self.nearbyReward), axis=1)
         return idx
 
+    def get_opt_arm_value(self):
+        """
+        :return: returns the value associated with the optimal arm
+        :rtype: float
+        """
+        return np.max((self.widths + self.means) * ((self.prices*self.num_product_sold_estimation) + self.nearbyReward), axis=1)
+
+
     def totalNearbyRewardEstimation(self):
         """
         :return: a matrix containing the nearby rewards for all products and all prices
@@ -60,8 +68,8 @@ class Ucb(Learner):
         for j in (list(set(nodesToVisit).intersection(self.secondaries[product]))):
             # the probability from a node to visit another one is given by the edge of the graph connecting the two
             # nodes/products
-            probabilityToVisitSecondary = graph.search_edge_by_nodes(graph.search_product_by_number(product),
-                                                                     graph.search_product_by_number(j)).probability
+            probabilityToVisitSecondary = self.graph.search_edge_by_nodes(self.graph.search_product_by_number(product),
+                                                                     self.graph.search_product_by_number(j)).probability
             if not isSecondary:
                 probabilityToVisitSecondary = probabilityToVisitSecondary * Settings.LAMBDA
             isSecondary = False
@@ -103,36 +111,3 @@ class Ucb(Learner):
                 else:
                     self.widths[prod][arm] = np.inf
         self.nearbyReward = self.totalNearbyRewardEstimation()
-
-
-
-graph = Graph(mode="full", weights=True)
-env = PricingEnvironment(4, graph, 1)
-learner = Ucb(4, env.prices[0], env.secondaries, graph)
-
-for i in range(10000):
-    if i == 9990:
-        aaa = 1
-    pulled_arms = learner.act()
-    print(pulled_arms)
-
-    visited_products, num_bought_products, a = env.round(pulled_arms)
-    #print("Vidited products: ", visited_products)
-    #print("Number of product sold: ", num_bought_products)
-
-    learner.updateHistory(pulled_arms, visited_products, num_bought_products)
-
-    # TODO  non hardcodare
-    if (i % 10 == 0) and (i != 0):
-        learner.update(pulled_arms)
-
-    '''print("Number of rewards per product:", learner.n)
-    print("T:",learner.t)
-    print("Means: ",learner.means)
-    print("Widths:",learner.widths)
-    print("Estimated number of product sold: ",learner.num_product_sold_estimation)'''
-print(learner.means)
-print(learner.widths)
-aaa = [i[j] for i, j in zip(learner.nearbyReward, learner.currentBestArms)]
-print(aaa)
-print(sum(aaa))

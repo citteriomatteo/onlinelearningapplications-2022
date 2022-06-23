@@ -140,11 +140,6 @@ class Graph:
 
         return first_node, second_node, p1, p2
 
-    def update_estimation(self, node, reward):
-        x = np.atleast_2d(node.x).T
-        self.M += np.dot(x, x.T)
-        self.b += reward * x
-
     def print_all(self):
         for edge in self.edges:
             print(edge.getNode1().name)
