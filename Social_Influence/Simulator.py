@@ -31,45 +31,39 @@ class Simulator:
         num_prod = random.choices([0, 1, 2, 3, 4], self.alpha_ratios[1:], k=1)[0]
 
         t = 0
-        visited_products = np.zeros(len(self.alpha_ratios) - 1)
-        num_bought_products = np.zeros(len(self.alpha_ratios) - 1)
+        visited_products = np.zeros(5)
+        num_bought_products = np.zeros(5)
 
         primary = self.graph.nodes[num_prod]
         second = self.graph.search_product_by_number(self.secondaries[primary.sequence_number][0])
         third = self.graph.search_product_by_number(self.secondaries[primary.sequence_number][1])
         page = Page(primary=primary, second=second, third=third)
         customer.click_on(page)
-        is_starting_node = True
         visited_products[num_prod] = 1
 
         while len(customer.pages) > 0:
-
-            #print("\n\n ----- ITERATION: " + str(t) + " -----")
-
-            # -----------------------------------------------------------------------------------
-            # 2: CUSTOMERS' CHOICE BETWEEN OPENING A NEW TAB AND USING AN ALREADY OPENED ONE
-
-            # randomized choice: choice of page 0-to-(|pages|-1) or creating a new page
-
             chosen_index = np.random.randint(low=0, high=len(customer.pages))
 
             page = customer.pages[chosen_index]
             primary = page.primary
             second = page.second
             third = page.third
-            num_bought_products[page.primary.sequence_number] = 0
-            p2 = self.graph.search_edge_by_nodes(primary, second).probability if (visited_products[second.sequence_number]==0) else 0
-            p3 = self.graph.search_edge_by_nodes(primary, third).probability if (visited_products[third.sequence_number] == 0) else 0
+            p2 = self.graph.search_edge_by_nodes(primary, second).probability if (
+                    visited_products[second.sequence_number] == 0) else 0
+            p3 = self.graph.search_edge_by_nodes(primary, third).probability if (
+                    visited_products[third.sequence_number] == 0) else 0
 
-            #customer.print_all_pages()
-            #print("· The customer chose the page " + str(chosen_index + 1) + ".")
+            # customer.print_all_pages()
+            # print("· The customer chose the page " + str(chosen_index + 1) + ".")
 
             # -----------------------------------------------------------------------------------
             # 4: CUSTOMERS' CHOICE BETWEEN BUYING AND NOT BUYING THE PRIMARY PRODUCT
-            if np.random.random() < self.conversion_rates[primary.sequence_number][selected_prices[primary.sequence_number]]:  # PRIMARY PRODUCT BOUGHT
+            if np.random.random() < self.conversion_rates[primary.sequence_number][
+                selected_prices[primary.sequence_number]]:  # PRIMARY PRODUCT BOUGHT
 
-                quantity = self.generateRandomQuantity(self.num_product_sold[primary.sequence_number][selected_prices[primary.sequence_number]])
-                #customer.add_product(product=primary, quantity=quantity)
+                quantity = self.generateRandomQuantity(
+                    self.num_product_sold[primary.sequence_number][selected_prices[primary.sequence_number]])
+                # customer.add_product(product=primary, quantity=quantity)
                 page.set_bought(True)
                 num_bought_products[page.primary.sequence_number] += quantity
 
@@ -93,10 +87,10 @@ class Simulator:
                     # --- page creation and insertion in the list of customer's pages ---
                     new_page = Page(new_primary, new_second, new_third)
                     customer.add_new_page(new_page)
-                    customer.click_on(new_page)
+                    # customer.click_on(new_page)
 
                 if choice[1] == 1:  # THIRD PRODUCT CHOSEN
-                        # CREATION OF THE NEW PAGE
+                    # CREATION OF THE NEW PAGE
                     new_primary = third
                     new_second = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][0])
                     new_third = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][1])
@@ -104,9 +98,9 @@ class Simulator:
                     # --- page creation and insertion in the list of customer's pages ---
                     new_page = Page(new_primary, new_second, new_third)
                     customer.add_new_page(new_page)
-                    customer.click_on(new_page)
+                    # customer.click_on(new_page)
 
-            customer.close_page(page)
+            customer.direct_close_page(page)
 
             t += 1
 

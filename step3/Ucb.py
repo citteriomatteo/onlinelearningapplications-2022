@@ -18,13 +18,14 @@ class Ucb(Learner):
         self.prices = prices
         self.pricesMeanPerProduct = np.mean(self.prices, 1)
         self.means = np.zeros(prices.shape)
-        self.nearbyReward = np.zeros(prices.shape)
+        self.nearbyReward = np.zeros((self.n_products, self.n_arms))
         self.widths = np.ones(prices.shape) * np.inf
         self.graph = graph
         self.secondaries = secondaries
         self.currentBestArms = np.zeros(len(prices))
         self.num_product_sold = num_product_sold
         self.n = np.zeros((self.n_products, self.n_arms))
+        self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
 
     def reset(self):
         self.__init__(self.n_arms, self.prices, self.graph)
@@ -98,18 +99,12 @@ class Ucb(Learner):
         """
 
         self.currentBestArms = arm_pulled
-        self.nearbyReward = self.totalNearbyRewardEstimation()
-        if i == 9990:
-            newNearby = self.simulateTotalNearby(arm_pulled)
-            ubab = np.zeros((self.n_products, self.n_arms, self.n_products))
-            for prod in range(self.n_products):
-                for price in range(self.n_arms):
-                    for temp in range(self.n_products):
-                        ubab[prod][price][temp] = self.means[prod][price]*newNearby[prod][temp]
-            aus = 0
-            #nannna = self.means * newNearby
-        #price_of_current_best = np.array([i[j] for i, j in zip(self.prices, pulled_arms)])
-        #num_products = len(arm_pulled)
+        self.nearbyReward = np.zeros((self.n_products, self.n_arms))
+        self.visit_probability_estimation = self.simulateTotalNearby(arm_pulled)
+        for prod in range(self.n_products):
+            for price in range(self.n_arms):
+                for temp in range(self.n_products):
+                    self.nearbyReward[prod][price] += self.means[prod][price]*self.visit_probability_estimation[prod][temp]*self.means[temp][self.currentBestArms[temp]]*self.num_product_sold[temp][self.currentBestArms[temp]]
 
         for prod in range(self.n_products):
             self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
@@ -124,12 +119,12 @@ class Ucb(Learner):
     def simulateTotalNearby(self, selected_price):
         times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
         for prod in range(self.n_products):
-            for iteration in range(10000):
+            for iteration in range(1000):
                 visited_products_ = self.simulateSingleNearby(selected_price, prod)
                 for j in range(len(visited_products_)):
                     if (visited_products_[j] == 1) and j != prod:
                         times_visited_from_starting_node[prod][j] += 1
-        return times_visited_from_starting_node / 10000
+        return times_visited_from_starting_node / 1000
 
     def simulateSingleNearby(self, selected_prices, starting_node):
         customer = Customer(reservation_price=100, num_products=len(self.graph.nodes), graph=self.graph)

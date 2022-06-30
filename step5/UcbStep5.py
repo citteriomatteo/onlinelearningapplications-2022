@@ -48,7 +48,7 @@ class Ucb(Learner):
             for price in range(len(self.prices[0])):
                 nearbyRewardsTable[node][price] = sum(self.visit_probability_estimation[node][price]
                                                       * conversion_of_current_best * price_of_current_best
-                                                      * num_product_sold_of_current_best)
+                                                      * num_product_sold_of_current_best * self.means[node][price])
         return nearbyRewardsTable
 
 
@@ -77,6 +77,7 @@ class Ucb(Learner):
             self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
             self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(self.boughts_per_arm[prod][arm_pulled[prod]])
             self.visit_probability_estimation[prod] = self.times_visited_from_starting_node[prod] / self.times_bought_as_first_node[prod]
+        self.visit_probability_estimation[np.isnan(self.visit_probability_estimation)] = 0
         '''update widths for every arm pulled for every product'''
         for prod in range(num_products):
             for arm in range(self.n_arms):
