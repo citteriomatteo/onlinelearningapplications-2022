@@ -1,6 +1,6 @@
 import numpy as np
 from Pricing.Learner import *
-from Pricing.pricingEnvironment import PricingEnvironment
+from Pricing.pricing_environment import EnvironmentPricing
 from Social_Influence.Graph import Graph
 
 
@@ -18,6 +18,7 @@ class Ucb(Learner):
         self.visit_probability_estimation = np.zeros((self.n_products, self.n_arms, self.n_products))
         self.times_visited_from_starting_node = np.zeros((self.n_products, self.n_arms, self.n_products))
         self.times_visited_as_first_node = np.zeros((self.n_products, self.n_arms, self.n_products))
+        self.times_bought_as_first_node = np.zeros((self.n_products, self.n_arms, self.n_products))
         self.n = np.zeros((self.n_products, self.n_arms))
 
     def reset(self):
@@ -54,6 +55,8 @@ class Ucb(Learner):
     def updateHistory(self, arm_pulled, visited_products, num_bought_products, num_primary):
         super().update(arm_pulled, visited_products, num_bought_products)
         self.times_visited_as_first_node[num_primary][arm_pulled[num_primary]] += 1
+        if num_bought_products[num_primary] > 0:
+            self.times_bought_as_first_node[num_primary][arm_pulled[num_primary]] += 1
         for i in range(len(visited_products)):
             if (visited_products[i] == 1) and i != num_primary:
                 self.times_visited_from_starting_node[num_primary][arm_pulled[num_primary]][i] += 1
@@ -73,7 +76,7 @@ class Ucb(Learner):
         for prod in range(num_products):
             self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
             self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(self.boughts_per_arm[prod][arm_pulled[prod]])
-            self.visit_probability_estimation[prod] = self.times_visited_from_starting_node[prod] / self.times_visited_as_first_node[prod]
+            self.visit_probability_estimation[prod] = self.times_visited_from_starting_node[prod] / self.times_bought_as_first_node[prod]
         '''update widths for every arm pulled for every product'''
         for prod in range(num_products):
             for arm in range(self.n_arms):
@@ -83,16 +86,18 @@ class Ucb(Learner):
                 else:
                     self.widths[prod][arm] = np.inf
         self.nearbyReward = self.totalNearbyRewardEstimation()
+        self.nearbyReward[np.isnan(self.nearbyReward)] = 0
         aaa = 1
 
 
 graph = Graph(mode="full", weights=True)
-env = PricingEnvironment(4, graph, 1)
+env = EnvironmentPricing(4, graph, 1)
 learner = Ucb(4, env.prices[0], env.secondaries)
 
 for i in range(10000):
     if i == 9990:
-        aaa = 1
+        aaa = learner.rewards_per_arm[0][0].count(1)
+        temp_means = learner.times_bought_as_first_node / learner.times_visited_as_first_node
     pulled_arms = learner.act()
     visited_products, num_bought_products, num_primary = env.round(pulled_arms)
     learner.updateHistory(pulled_arms, visited_products, num_bought_products, num_primary)

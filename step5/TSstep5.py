@@ -1,6 +1,6 @@
 import numpy as np
 from Pricing.Learner import *
-from Pricing.pricingEnvironment import PricingEnvironment
+from Pricing.pricing_environment import EnvironmentPricing
 from Settings import LAMBDA
 from Social_Influence.Graph import Graph
 
@@ -89,6 +89,21 @@ class TS(Learner):
 
         expected_reward_actual_node = np.zeros(self.n_arms)
 
+        probability_to_observe = 1
+        for node in (list(set(node_to_visit).intersection(self.secondaries[actual_node]))):
+            # delete the actual_node from the node to visit
+            new_node_to_visit = node_to_visit.copy()
+            new_node_to_visit.remove(node)
+
+            # probability to click node (probability_to_observe will be 1 for the first node and LAMBDA for the second)
+            prob_to_clik_node = probability_to_observe * graph.search_edge_by_nodes(
+                graph.search_product_by_number(actual_node),
+                graph.search_product_by_number(node)).probability[0]  # senza [0] è un array con un elemento
+
+            expected_reward_actual_node += prob_to_clik_node * self.expected_reward(node, new_node_to_visit)
+
+            probability_to_observe = LAMBDA
+
         for arm in range(self.n_arms):
             alpha = self.beta_parameters[actual_node][arm][0]
             beta = self.beta_parameters[actual_node][arm][1]
@@ -97,9 +112,47 @@ class TS(Learner):
 
         return expected_reward_actual_node
 
+    def expected_reward(self, actual_node, node_to_visit):
+        """
+        the first time i call expected_reward i pass only the actual_node. the parameter node_to_visit is managed during the recursion
+        :param actual_node: node from which calculate the expected nearby reward
+        :type actual_node: int
+        :param node_to_visit: list of node to be visited
+        :type node_to_visit: list
+        :return: for each product and price return the expected reward obtained by the potential revenue of other product
+        :rtype: matrix 5x4
+        """
+        # array containing for the actual_node the expected reward to be calculated
+        expected_reward_actual_node = np.zeros(self.n_arms)
+        # calculate expected_reward of actual node. I put this is else
+        for arm in range(self.n_arms):
+            alpha = self.beta_parameters[actual_node][arm][0]
+            beta = self.beta_parameters[actual_node][arm][1]
+            # for each arm calculate the expected reward of the actual_node
+            expected_reward_actual_node[arm] = (alpha / (alpha + beta)) * self.prices[actual_node][arm] * \
+                                               self.num_product_sold_estimation[actual_node][arm]
+
+        # adds the expected rewards of the 2 secondary products
+        probability_to_observe = 1
+        for node in (list(set(node_to_visit).intersection(self.secondaries[actual_node]))):
+            # delete the actual_node from the node to visit
+            new_node_to_visit = node_to_visit.copy()
+            new_node_to_visit.remove(node)
+
+            # probability to click node (probability_to_observe will be 1 for the first node and LAMBDA for the second)
+            prob_to_clik_node = probability_to_observe * graph.search_edge_by_nodes(
+                graph.search_product_by_number(actual_node),
+                graph.search_product_by_number(node)).probability[0]  # senza [0] è un array con un elemento
+
+            expected_reward_actual_node += prob_to_clik_node * self.expected_reward(node, new_node_to_visit)
+
+            probability_to_observe = LAMBDA
+
+        return np.mean(expected_reward_actual_node)
+
 
 graph = Graph(mode="full", weights=True)
-env = PricingEnvironment(4, graph, 1)
+env = EnvironmentPricing(4, graph, 1)
 learner = TS(4, env.prices[0], env.secondaries, graph)
 
 for i in range(10000):

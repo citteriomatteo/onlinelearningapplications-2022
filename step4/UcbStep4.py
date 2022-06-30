@@ -2,7 +2,7 @@ import numpy as np
 
 import Settings
 from Pricing.Learner import *
-from Pricing.pricingEnvironment import PricingEnvironment
+from Pricing.pricing_environment import EnvironmentPricing
 from Social_Influence.Graph import Graph
 
 
@@ -107,7 +107,7 @@ class Ucb(Learner):
 
 
 graph = Graph(mode="full", weights=True)
-env = PricingEnvironment(4, graph, 1)
+env = EnvironmentPricing(4, graph, 1)
 learner = Ucb(4, env.prices[0], env.secondaries, graph)
 
 for i in range(10000):

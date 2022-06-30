@@ -29,7 +29,7 @@ class Customer:
         return False
 
     def set_inactive(self, prod_number):
-        if self.products_state[prod_number] == 1:
+        if self.products_state[prod_number] != 0:
             self.products_state[prod_number] = -1
             return True
 
@@ -50,12 +50,18 @@ class Customer:
     def add_new_page(self, new_page):
         self.pages.append(new_page)
 
+    def direct_close_page(self, page):
+        self.pages.remove(page)
+
     def close_page(self, page):
         if self.set_inactive(prod_number=page.primary.sequence_number):
             self.pages.remove(page)
             return True
 
         return False
+
+    def direct_close_page(self, page):
+        self.pages.remove(page)
 
     def get_randomized_features(self):
         """

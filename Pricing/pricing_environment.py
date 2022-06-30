@@ -6,7 +6,7 @@ from Social_Influence.Simulator import Simulator
 from Pricing.user_data_generator import StandardDataGenerator
 
 
-class PricingEnvironment:
+class EnvironmentPricing:
     def __init__(self, n_arms, graph, probabilities, resources="../json/dataUsers.json"):
         self.n_arms = n_arms
         self.probabilities = probabilities
