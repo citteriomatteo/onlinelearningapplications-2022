@@ -153,7 +153,7 @@ class TS(Learner):
 
 graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)
-learner = TS(4, env.prices[0], env.secondaries, graph)
+learner = TS(4, env.prices, env.secondaries, graph)
 
 for i in range(10000):
     if i == 50:

@@ -1,5 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
+
+
 class CUSUM:
     def __init__(self, M, eps, h):
         self.M = M

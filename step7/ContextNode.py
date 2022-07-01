@@ -41,10 +41,25 @@ class ContextNode:
         """
 
         # use deepcopy to get a child object that does not interfere with the parent one
-        self.left_child = ContextNode(self.all_features, left_learner)
-        self.left_child.feature_subspace = copy.deepcopy(self.feature_subspace)
-        self.left_child.feature_subspace[splitting_feature] = False
+        self.left_child = ContextNode(self.features, left_learner)
+        self.left_child.features_subspace = copy.deepcopy(self.features_subspace)
+        self.left_child.features_subspace[splitting_feature] = False
         # right node --> feature = True
-        self.right_child = ContextNode(self.all_features, right_learner)
-        self.right_child.feature_subspace = copy.deepcopy(self.feature_subspace)
-        self.right_child.feature_subspace[splitting_feature] = True
+        self.right_child = ContextNode(self.features, right_learner)
+        self.right_child.features_subspace = copy.deepcopy(self.features_subspace)
+        self.right_child.features_subspace[splitting_feature] = True
+
+    def print(self):
+        if self.left_child:
+            self.left_child.print()
+        print("[ " + str(self.features_subspace) + " ]"),
+        if self.right_child:
+            self.right_child.print()
+
+    def print_mean(self):
+        if self.left_child:
+            self.left_child.print_mean()
+        print("Features of the context: ", self.features_subspace)
+        print("[ " + str(self.base_learner.means) + " ]"),
+        if self.right_child:
+            self.right_child.print_mean()

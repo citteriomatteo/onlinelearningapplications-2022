@@ -50,3 +50,10 @@ class Learner:
                     self.rewards_per_arm[prod][pulled_arms[prod]].append(1)
                     self.boughts_per_arm[prod][pulled_arms[prod]].append(num_bought_products[prod])
         self.pulled.append(pulled_arms)
+
+    def get_number_of_rewards(self):
+        tot = 0
+        for i in range(len(self.rewards_per_arm)):
+            for j in range(len(self.rewards_per_arm[0])):
+                tot += len(self.rewards_per_arm[i][j])
+        return tot

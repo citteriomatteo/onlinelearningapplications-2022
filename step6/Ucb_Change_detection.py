@@ -1,8 +1,8 @@
-
+from Non_stationary_environment import Non_Stationary_Environment
 from Cumulative_sum import *
 from Pricing import Learner
 
-class Ucv_Change_detection(Learner):
+class Ucb_Change_detection(Learner):
     def __init__(self,n_arms, prices, secondaries, M=100,eps=0.05,h=20, alpha=0.01):
         super().__init__(n_arms, len(prices))
         self.prices = prices
@@ -150,7 +150,7 @@ M = 100
 eps = 0.1
 h = np.log(T)*2
 for j in range(n_exp):
-    e_UCB = Non_stationary_environment(4, P, T)
+    e_UCB = Non_Stationary_Environment(4, P, T)
     e_CD = Non_Stationary_Environment(p0.size, P, T)
     learner_CD = CUSUM_UCB_Matching(p0.size, *p0.shape, M, eps, h)
     learner_UCB = UCB_Matching(p0.size, *p0.shape)

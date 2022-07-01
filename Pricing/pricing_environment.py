@@ -1,13 +1,12 @@
 import numpy as np
 
 import Settings
-from Social_Influence.Graph import Graph
 from Social_Influence.Simulator import Simulator
 from Pricing.user_data_generator import StandardDataGenerator
 
 
 class EnvironmentPricing:
-    def __init__(self, n_arms, graph, probabilities, resources="../json/dataUsers.json"):
+    def __init__(self, n_arms, graph, probabilities, resources="../json/dataUsers.json", mode='single_class'):
         self.n_arms = n_arms
         self.probabilities = probabilities
 
@@ -21,8 +20,8 @@ class EnvironmentPricing:
         self.prices = self.user_data.get_prices()
         self.secondaries = self.user_data.get_secondaries()
         self.graph = graph
-        self.simulator = Simulator(self.graph, self.alpha_ratios[0], self.num_product_sold[0], self.secondaries,
-                                   self.conversion_rates[0])
+        self.simulator = Simulator(self.graph, self.alpha_ratios, self.num_product_sold, self.secondaries,
+                                   self.conversion_rates, mode=mode)
         self.theta = np.random.dirichlet(np.ones(len(self.graph.nodes)), size=1)
         self.arms_features = np.random.binomial(1, 0.5, size=(len(self.graph.edges), len(self.graph.nodes)))
         self.lam = Settings.LAMBDA
