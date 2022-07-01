@@ -38,54 +38,6 @@ class Ucb(Learner):
         idx = np.argmax((self.widths + self.means) * ((self.prices*self.num_product_sold) + self.nearbyReward), axis=1)
         return idx
 
-    def totalNearbyRewardEstimation(self):
-        """
-        :return: a matrix containing the nearby rewards for all products and all prices
-        """
-        # contains the conversion rate of the current best price for each product
-        conversion_of_current_best = [i[j] for i,j in zip(self.means, self.currentBestArms)]
-        nearbyRewardsTable = np.zeros(self.prices.shape)
-        # it is created a list containing all the nodes/products that must be visited (initially all the products)
-        nodesToVisit = [i for i in range(len(self.prices))]
-        for node in nodesToVisit:
-            copyList = nodesToVisit.copy()
-            copyList.remove(node)
-            # for each product and each price calculates its nearby reward
-            for price in range(len(self.prices[0])):
-                nearbyRewardsTable[node][price] += self.singleNearbyRewardEstimation(copyList, conversion_of_current_best,
-                                                                                     node, self.means[node][price])
-        return nearbyRewardsTable
-
-    def singleNearbyRewardEstimation(self, nodesToVisit, conversion_estimation_for_best_arms, product, probabilityToEnter):
-        """
-        :return: nearby reward of a single price of a single product
-        :rtype: float
-        """
-        valueToReturn = 0
-        isSecondary = True
-        # for each node that is possible to visit from the starting one, calculates its nearby reward
-        for j in (list(set(nodesToVisit).intersection(self.secondaries[product]))):
-            # the probability from a node to visit another one is given by the edge of the graph connecting the two
-            # nodes/products
-            probabilityToVisitSecondary = graph.search_edge_by_nodes(graph.search_product_by_number(product),
-                                                                     graph.search_product_by_number(j)).probability
-            # the chance of buying a secondary product is given by the probability of visiting it, the probability
-            # to buy the primary and the probability to buy the secondary once its page is reached (its
-            # conversion rate)
-            if not isSecondary:
-                probabilityToVisitSecondary = probabilityToVisitSecondary * Settings.LAMBDA
-            isSecondary = False
-            probToBuyASecondary = conversion_estimation_for_best_arms[j] * probabilityToVisitSecondary * probabilityToEnter
-            valueToReturn += self.prices[j][self.currentBestArms[j]] * probToBuyASecondary * self.num_product_sold[j][self.currentBestArms[j]]
-            # the tree must be ran across deeper, but it is useless to visit it if the chance of reaching a deeper node
-            # is almost zero, so it is checked how much probable it is to going deeper before
-            # doing the other calculations
-            if(probToBuyASecondary>(1e-6)):
-                copyList = nodesToVisit.copy()
-                copyList.remove(j)
-                valueToReturn += self.singleNearbyRewardEstimation(copyList, conversion_estimation_for_best_arms, j, probToBuyASecondary)
-        return valueToReturn
-
     def updateHistory(self, arm_pulled, visited_products, num_bought_products):
         super().update(arm_pulled, visited_products, num_bought_products)
 
@@ -104,7 +56,7 @@ class Ucb(Learner):
         for prod in range(self.n_products):
             for price in range(self.n_arms):
                 for temp in range(self.n_products):
-                    self.nearbyReward[prod][price] += self.means[prod][price]*self.visit_probability_estimation[prod][temp]*self.means[temp][self.currentBestArms[temp]]*self.num_product_sold[temp][self.currentBestArms[temp]]
+                    self.nearbyReward[prod][price] += self.means[prod][price]*self.visit_probability_estimation[prod][temp]*self.means[temp][self.currentBestArms[temp]]*self.num_product_sold[temp][self.currentBestArms[temp]]*self.prices[temp][self.currentBestArms[temp]]
 
         for prod in range(self.n_products):
             self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
@@ -119,12 +71,12 @@ class Ucb(Learner):
     def simulateTotalNearby(self, selected_price):
         times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
         for prod in range(self.n_products):
-            for iteration in range(1000):
+            for iteration in range(364):
                 visited_products_ = self.simulateSingleNearby(selected_price, prod)
                 for j in range(len(visited_products_)):
                     if (visited_products_[j] == 1) and j != prod:
                         times_visited_from_starting_node[prod][j] += 1
-        return times_visited_from_starting_node / 1000
+        return times_visited_from_starting_node / 364
 
     def simulateSingleNearby(self, selected_prices, starting_node):
         customer = Customer(reservation_price=100, num_products=len(self.graph.nodes), graph=self.graph)
@@ -203,41 +155,6 @@ class Ucb(Learner):
             t += 1
         return visited_products
 
-    '''
-        def simulateSingleNearby(self, selected_prices, starting_node):
-            customer = Customer(100, self.n_products, self.graph)
-            visited_products_ = np.zeros(len(selected_prices))
-            primary = self.graph.nodes[starting_node]
-            second = self.graph.search_product_by_number(self.secondaries[primary.sequence_number][0])
-            third = self.graph.search_product_by_number(self.secondaries[primary.sequence_number][1])
-            page = Page(primary=primary, second=second, third=third)
-            customer.add_new_page(page)
-            visited_products_[primary.sequence_number] += 1
-            starting = True
-
-            while len(customer.pages) > 0:
-                chosen_page = random.randint(0, len(customer.pages))
-                current_page = customer.pages[chosen_page]
-                primary = current_page.primary
-                second = current_page.second
-                third = current_page.third      
-                secondary_edge = self.graph.search_edge_by_nodes(primary, second).probability if (visited_products[second.sequence_number] == 0) else 0
-                tertiary_edge = self.graph.search_edge_by_nodes(primary, third).probability if (visited_products[third.sequence_number] == 0) else 0
-
-                soros = self.means[primary.sequence_number][selected_prices[primary.sequence_number]]
-                if starting or (random.random() < self.means[primary.sequence_number][selected_prices[primary.sequence_number]]):
-                    starting = False
-
-                    if random.random() < secondary_edge:
-                        new_primary = self.graph.nodes[second.sequence_number]
-                        new_second = self.graph.search_product_by_number(self.secondaries[second.sequence_number][0])
-                        new_third = self.graph.search_product_by_number(self.secondaries[second.sequence_number][1])
-                        new_page = Page(new_primary, new_second, new_third)
-                        customer.add_new_page(new_page)
-            '''
-
-
-
 graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)
 learner = Ucb(4, env.prices[0], env.secondaries, env.num_product_sold[0], graph)
@@ -264,6 +181,6 @@ for i in range(10000):
     #print("Widths:",learner.widths)
 
 print(learner.means)
-#print(learner.widths)
+print(learner.widths)
 print((learner.widths + learner.means) * ((learner.prices*learner.num_product_sold) + learner.nearbyReward))
 
