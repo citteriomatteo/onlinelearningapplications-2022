@@ -1,21 +1,24 @@
-import numpy as np
 import random
 
-from Action import Action
+import numpy as np
 
-from Settings import LAMBDA, CONVERSION_RATE
+from Pricing.pricing_environment import EnvironmentPricing
 from Social_Influence.Customer import Customer
 from Social_Influence.Graph import Graph
 from Social_Influence.Page import Page
 
-
-class Simulator:
-    def __init__(self, graph, alpha_ratios, num_product_sold, secondaries, conversion_rates):
+class nearbySimulator():
+    def __init__(self, graph, num_product_sold, secondaries, conversion_rates, alpha_ratios):
+        self.times_bought_as_first_node = np.zeros((5, 5))
+        self.times_visited_as_first_node = np.zeros((5, 5))
+        self.times_visited_from_starting_node = np.zeros((5, 5))
         self.graph = graph
-        self.alpha_ratios = alpha_ratios
         self.num_product_sold = num_product_sold
         self.secondaries = secondaries
         self.conversion_rates = conversion_rates
+        self.n_products = 5
+        self.alpha_ratios = alpha_ratios
+
 
     @staticmethod
     def generateRandomQuantity(mean):
@@ -23,7 +26,20 @@ class Simulator:
         # print("mean: "+str(mean) + " deviation: "+str(deviation))
         return random.randint(round(mean - deviation), round(mean + deviation))
 
-    def simulate(self, selected_prices, customer=None):
+    def simulateTotalNearby(self, selected_price):
+        times_visited_from_starting_node = np.zeros((self.n_products, 5))
+        #for prod in range(self.n_products):
+        for iteration in range(10000):
+            visited_products_, num_bought_products, primary = self.simulateSingleNearby(selected_price)
+            self.times_visited_as_first_node[primary] += 1
+            if num_bought_products[primary] > 0:
+                self.times_bought_as_first_node[primary] += 1
+            for i in range(len(visited_products_)):
+                if (visited_products_[i] == 1) and i != primary:
+                    self.times_visited_from_starting_node[primary][i] += 1
+        return self.times_visited_from_starting_node / self.times_visited_as_first_node, self.times_visited_from_starting_node / self.times_bought_as_first_node
+
+    def simulateSingleNearby(self, selected_prices, customer=None):
 
         if customer is None:
             customer = Customer(reservation_price=100, num_products=len(self.graph.nodes), graph=self.graph)
@@ -106,3 +122,10 @@ class Simulator:
 
         # print(num_bought_products)
         return visited_products, num_bought_products, num_prod
+
+graph = Graph(mode="full", weights=True)
+env = EnvironmentPricing(4, graph, 1)
+learner = nearbySimulator(graph, env.num_product_sold[0], env.secondaries, env.conversion_rates[0], env.alpha_ratios[0])
+aaa, bbb = learner.simulateTotalNearby([0,1,2,2,3])
+print(aaa)
+print(bbb)

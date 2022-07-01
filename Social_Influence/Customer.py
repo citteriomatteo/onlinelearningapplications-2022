@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 
 class Customer:
@@ -14,6 +15,7 @@ class Customer:
         self.graph = graph
         self.pages = []
         self.cart = []
+        self.features = self.get_randomized_features()
 
 
     def set_susceptible(self, prod_number):
@@ -27,7 +29,7 @@ class Customer:
         return False
 
     def set_inactive(self, prod_number):
-        if self.products_state[prod_number] == 1:
+        if self.products_state[prod_number] != 0:
             self.products_state[prod_number] = -1
             return True
 
@@ -48,12 +50,28 @@ class Customer:
     def add_new_page(self, new_page):
         self.pages.append(new_page)
 
+    def direct_close_page(self, page):
+        self.pages.remove(page)
+
     def close_page(self, page):
         if self.set_inactive(prod_number=page.primary.sequence_number):
             self.pages.remove(page)
             return True
 
         return False
+
+    def direct_close_page(self, page):
+        self.pages.remove(page)
+
+    def get_randomized_features(self):
+        """
+        randomizes the features for the customer
+        """
+        features = []
+        for i in range(2):
+            features.append(random.choice([True, False]))
+
+        return features
 
     def print_all_pages(self):
         first_prods = ""

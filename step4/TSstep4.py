@@ -1,6 +1,6 @@
 import numpy as np
 from Pricing.Learner import *
-from Pricing.pricingEnvironment import PricingEnvironment
+from Pricing.pricing_environment import EnvironmentPricing
 from Settings import LAMBDA
 from Social_Influence.Graph import Graph
 
@@ -141,7 +141,7 @@ class TS(Learner):
 
 
 graph = Graph(mode="full", weights=True)
-env = PricingEnvironment(4, graph, 1)
+env = EnvironmentPricing(4, graph, 1)
 learner = TS(4, env.prices[0], env.secondaries, graph)
 
 for i in range(10000):

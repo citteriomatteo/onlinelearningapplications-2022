@@ -1,7 +1,7 @@
 import random
 
 from Pricing.Learner import *
-from Pricing.pricingEnvironment import PricingEnvironment
+from Pricing.pricing_environment import EnvironmentPricing
 from Social_Influence.Graph import Graph
 
 
@@ -149,7 +149,7 @@ class Greedy_Learner(Learner):
 
 
 graph_sample = Graph(mode="full", weights=True)
-env = PricingEnvironment(4, graph_sample, 1)
+env = EnvironmentPricing(4, graph_sample, 1)
 learner = Greedy_Learner(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold,
                          graph_sample)
 learner.update()

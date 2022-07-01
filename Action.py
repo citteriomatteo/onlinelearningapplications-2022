@@ -33,12 +33,6 @@ class Action:
         return True
 
     def compute_for_social_influence(self, graph):
-        if self.click_second:
-            graph.update_estimation(node=self.page.second, reward=1)
-
-        if self.click_third:
-            graph.update_estimation(node=self.page.third, reward=1)
-
         if self.page_close:
             """ We put reward = 0 for the nodes that have been visualized but not clicked on. 
                     (still susceptible on close) """

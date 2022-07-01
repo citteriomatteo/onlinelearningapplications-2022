@@ -5,13 +5,13 @@ import numpy as np
 from Social_Influence.Edge import Edge
 from Social_Influence.Product import Product
 
+
 class Graph:
     nodes = []
     edges = []
 
     def __init__(self, mode, weights):
         """
-
         :param mode: The type of graph (reduced or full)
         :type mode: string
         :param weights: The choice of loading probabilities from the file or not
@@ -139,11 +139,6 @@ class Graph:
                 p2 = e.probability
 
         return first_node, second_node, p1, p2
-
-    def update_estimation(self, node, reward):
-        x = np.atleast_2d(node.x).T
-        self.M += np.dot(x, x.T)
-        self.b += reward * x
 
     def print_all(self):
         for edge in self.edges:
