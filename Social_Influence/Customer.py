@@ -9,14 +9,39 @@ class Customer:
              1 -> active
     """
 
-    def __init__(self, reservation_price, num_products, graph):
+    def __init__(self, reservation_price, num_products, graph, env=None):
         self.reservation_price = reservation_price
         self.products_state = np.zeros(shape=num_products)
         self.graph = graph
         self.pages = []
         self.cart = []
-        self.features = self.get_randomized_features()
+        if env is not None:
+            self.features_class, self.features = self.get_right_user_class(env.classes)
 
+            # setting of the simulator with the characteristics related to this specific customer's class
+            env.simulator.set_alpha_ratios(env.alpha_ratios[self.features_class])
+            env.simulator.set_num_product_sold(env.num_product_sold[self.features_class])
+            env.simulator.set_conversion_rates(env.conversion_rates[self.features_class])
+
+        else:       # if features are not useful (step 1-6) -> force the Customer to the class 1
+            self.features_class = 0
+            self.features = [True, True]
+
+
+    def get_right_user_class(self, classes=None):
+        """
+        Gets the class of the Customer considering the fractions of probabilities on the .json file.
+        """
+        class_idx = 0
+        features = None
+
+        probs = [classes[c]['fraction'] for c in classes]
+        class_names = list(classes.keys())
+
+        class_idx = random.choices([0, 1, 2], probs, k=1)[0]
+        features = classes[class_names[class_idx]]['features']
+
+        return class_idx, features
 
     def set_susceptible(self, prod_number):
         self.products_state[prod_number] = 0
@@ -62,16 +87,6 @@ class Customer:
 
     def direct_close_page(self, page):
         self.pages.remove(page)
-
-    def get_randomized_features(self):
-        """
-        randomizes the features for the customer
-        """
-        features = []
-        for i in range(2):
-            features.append(random.choice([True, False]))
-
-        return features
 
     def print_all_pages(self):
         first_prods = ""

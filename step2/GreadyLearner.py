@@ -19,8 +19,8 @@ class Greedy_Learner(Learner):
         # num of arms (prices for each product)
         self.prices = prices
         self.conversion_rates = conversion_rates
-        self.n_arms = len(prices[0][0])
-        self.n_products = len(prices[0])
+        self.n_arms = prices.shape[1]
+        self.n_products = prices.shape[0]
         self.classes = classes
         self.secondaries = secondaries
         self.num_product_sold = num_product_sold
@@ -76,14 +76,10 @@ class Greedy_Learner(Learner):
         for i in range(self.n_products):
             conversion_for_best_arms = [i[j] for i, j in zip(self.conversion_rates[chosen_class],
                                                              self.max_idxs[chosen_class])]
-            aaa = (self.prices[chosen_class][i][arms[i]] * self.conversion_rates[chosen_class][i][arms[i]]
-                   * self.num_product_sold[chosen_class][i][arms[i]])
-            bbb = self.singleNearbyRewardEstimation(self.calculateNodesToVisit(i), conversion_for_best_arms, i,
-                                                    self.conversion_rates[chosen_class][i][arms[i]], chosen_class)
-            revenue += (self.prices[chosen_class][i][arms[i]] * self.conversion_rates[chosen_class][i][arms[i]]
-                        * self.num_product_sold[chosen_class][i][arms[i]]) + self.singleNearbyRewardEstimation \
-                           (self.calculateNodesToVisit(i), conversion_for_best_arms, i,
-                            self.conversion_rates[chosen_class][i][arms[i]], chosen_class)
+            revenue += (self.prices[i][arms[i]] * self.conversion_rates[chosen_class][i][arms[i]]
+                        * self.num_product_sold[chosen_class][i][arms[i]])
+            # todo: re-add nearbyrewardestimation in revenue
+
         return revenue
 
     @staticmethod
@@ -92,42 +88,8 @@ class Greedy_Learner(Learner):
         list_to_return.remove(index)
         return list_to_return
 
-    def singleNearbyRewardEstimation(self, nodes_to_visit, conversion_estimation_for_best_arms, product,
-                                     probability_to_enter, chosen_class):
-        """
-        :return: nearby reward of a single price of a single product
-        :rtype: float
-        """
-        value_to_return = 0
-        # for each node that is possible to visit from the starting one, calculates its nearby reward
-        for j in (list(set(nodes_to_visit).intersection(self.secondaries[product]))):
-            # the probability from a node to visit another one is given by the edge of the graph connecting the two
-            # nodes/products
-            node1 = self.graph.search_product_by_number(product)
-            node2 = self.graph.search_product_by_number(j)
-            edge = self.graph.search_edge_by_nodes(node1,node2)
-            probability_to_visit_secondary = self.graph.search_edge_by_nodes(self.graph.search_product_by_number(product),
-                                                                        self.graph.search_product_by_number(j)).probability
-            # the chance of buying a secondary product is given by the probability of visiting it, the probability
-            # to buy the primary and the probability to buy the secondary once its page is reached (its
-            # conversion rate)
-            prob_to_buy_a_secondary = conversion_estimation_for_best_arms[
-                                          j] * probability_to_visit_secondary * probability_to_enter
-            value_to_return += self.prices[chosen_class][j][self.max_idxs[chosen_class][j]] * prob_to_buy_a_secondary \
-                               * self.num_product_sold[chosen_class][j][self.max_idxs[chosen_class][j]]
-            # the tree must be ran across deeper, but it is useless to visit it if the chance of reaching a deeper node
-            # is almost zero, so it is checked how much probable it is to going deeper before
-            # doing the other calculations
-            if prob_to_buy_a_secondary > 1e-6:
-                copy_list = nodes_to_visit.copy()
-                copy_list.remove(j)
-                value_to_return += self.singleNearbyRewardEstimation(copy_list, conversion_estimation_for_best_arms,
-                                                                     j, prob_to_buy_a_secondary, chosen_class)
-        return value_to_return
-
     def update(self):
         """
-
         :return: update the max_idx and max_revenues
         :rtype: none
         """

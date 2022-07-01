@@ -92,7 +92,7 @@ class Ucb(Learner):
 
 graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)
-learner = Ucb(4, env.prices[0], env.secondaries)
+learner = Ucb(4, env.prices, env.secondaries)
 
 for i in range(10000):
     if i == 9990:

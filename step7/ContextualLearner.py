@@ -23,7 +23,7 @@ class ContextualLearner(Learner):
             if cur_node.is_leaf():
                 navigate = False
                 break
-            left_subspace = cur_node.left_child.feature_subspace
+            left_subspace = cur_node.left_child.features_subspace
             go_left = True
             for feature in left_subspace:
                 feature_idx = self.features.index(feature)
@@ -34,7 +34,7 @@ class ContextualLearner(Learner):
                 cur_node = cur_node.left_child
             else:
                 # optional check: it should be the right child by construction
-                right_subspace = cur_node.right_child.feature_subspace
+                right_subspace = cur_node.right_child.features_subspace
                 go_right = True
                 for feature in left_subspace:
                     feature_idx = self.features.index(feature)
@@ -47,4 +47,12 @@ class ContextualLearner(Learner):
                     raise NotImplementedError("An error occurs: neither the left and the right child are compliant "
                                               "with the given features.")
         return cur_node.base_learner
+
+    def print_context_tree(self):
+        self.context_tree.print()
+
+    def print_mean(self):
+        self.context_tree.print_mean()
+
+
 

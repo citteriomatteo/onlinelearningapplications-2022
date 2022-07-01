@@ -3,6 +3,7 @@ import numpy as np
 
 from step7.ContextNode import ContextNode
 from step7.ContextualLearner import ContextualLearner
+from step7.UcbStep7 import Ucb
 
 
 class ContextGenerator:
@@ -22,7 +23,7 @@ class ContextGenerator:
         """
 
         self.features = features
-        self.collected_arms = np.array([], dtype=np.int)
+        self.collected_arms = None
         self.collected_visits = None
         self.collected_bought_products = None
         self.collected_features = None
@@ -45,7 +46,10 @@ class ContextGenerator:
         :param num_bought_products: list of bought products (in quantities) at day t
         :param features: features of the users that play an arm at day t
         """
-        self.collected_arms = np.append(self.collected_arms, pulled_arms)
+        if self.collected_arms is None:
+            self.collected_arms = pulled_arms
+        else:
+            self.collected_arms = np.vstack((self.collected_arms, pulled_arms))
 
         if self.collected_visits is None:
             self.collected_visits = visited_products
@@ -85,18 +89,32 @@ class ContextGenerator:
 
         features, values_after_split, right_learners, left_learners = self.iterate_over_features(leaf)
         # now get the max value after the split and the index
-        max_value = max(values_after_split)
-        idx = values_after_split.index(max_value)
+        max_value = np.max(values_after_split)
+
+
+        # at the beginning, values will be all inf due to a lack of samples -> NO SPLIT IN THIS CASE!
+        if np.isinf(max_value):
+            return
+
+        # Checks in which side there is the maximum value (to index the specific feature)
+        idx = -1
+        for i in range(len(values_after_split)):
+            if np.where(values_after_split[i] == max_value)[0] >= 0:
+                idx = i
+
         # check if the value is larger than the value before split
         before_learner = leaf.base_learner
-        value_before = self.compute_lower_bound(before_learner.get_opt_arm_expected_value()[0],
-                                                 len(before_learner.collected_rewards))
+        value_before = self.compute_lower_bound((before_learner.get_opt_arm_value())[0],
+                                                before_learner.get_number_of_rewards())
 
         if value_before < max_value:
             best_feature = features[idx]
             # there is a feature for which it is worth to split
             leaf.split(best_feature, left_learners[idx], right_learners[idx])
             self.update_contextual_learner()
+            print("AFTER SPLIT: \n")
+            self.contextual_learner.print_context_tree()
+
 
     def iterate_over_features(self, leaf):
         """
@@ -140,6 +158,7 @@ class ContextGenerator:
                         right_split_indices.append(idx)
 
             # GREEDY ALGORITHM.
+
             left_split_probability = len(left_split_indices) / len(indices)
             right_split_probability = 1.0 - left_split_probability
 
@@ -148,24 +167,33 @@ class ContextGenerator:
             right_subspace = copy.deepcopy(leaf.features_subspace)
             left_subspace[feature] = False
             right_subspace[feature] = True
+
             left_learner = self.get_offline_trained_learner(pulled_arms=self.collected_arms[left_split_indices],
                                                             visits=self.collected_visits[left_split_indices],
-                                                            num_bought=self.collected_bought_products[left_split_indices],
+                                                            num_bought=self.collected_bought_products[
+                                                                left_split_indices],
                                                             )
             right_learner = self.get_offline_trained_learner(pulled_arms=self.collected_arms[right_split_indices],
                                                              visits=self.collected_visits[right_split_indices],
-                                                             num_bought=self.collected_bought_products[right_split_indices],
+                                                             num_bought=self.collected_bought_products[
+                                                                 right_split_indices],
                                                              )
             left_value = left_learner.get_opt_arm_value()
             right_value = right_learner.get_opt_arm_value()
-            value_after = self.compute_lower_bound(left_split_probability, len(left_split_indices)) * \
-                          self.compute_lower_bound(left_value, len(left_learner.collected_rewards)) + \
-                          self.compute_lower_bound(right_split_probability, len(right_split_indices)) * \
-                          self.compute_lower_bound(right_value, len(right_learner.collected_rewards))
+
+            c1_probability = left_split_probability
+            c1_mean = self.compute_lower_bound(left_value, left_learner.get_number_of_rewards())
+
+            c2_probability = right_split_probability
+            c2_mean = self.compute_lower_bound(right_value, right_learner.get_number_of_rewards())
+
+            # HOEFFDING BOUND FOR SPLIT VALIDITY CHECK
+            value_after = c1_probability * c1_mean + c2_probability + c2_mean
 
             values_after_split.append(value_after)
             right_learners.append(right_learner)
             left_learners.append(left_learner)
+
         return available_features, values_after_split, right_learners, left_learners
 
     def update_contextual_learner(self):
@@ -189,14 +217,18 @@ class ContextGenerator:
         """
         Train a new learner to be set as base learner of a new context
         :param pulled_arms: history of pulled arms
-        :param rewards: history of rewards received by the environment
-        :param costs: history of received costs
-        :param subspace: feature subspace of the learner
+        :param visits: visits received by the environment
+        :param num_bought: received number of items bought
         :return:
         """
-        learner = self.contextual_learner.get_root_learner()
 
-        for a, v, n in zip(pulled_arms, visits, num_bought):
-            learner.updateHistory(a, v, n)
-        learner.update(pulled_arms)
+        # TODO: probably need to make a deepcopy of the root and put the children to None
+        learner = copy.deepcopy(self.contextual_learner.get_root_learner())
+
+        for i in range(len(pulled_arms)):
+            learner.updateHistory(pulled_arms[i], visits[i], num_bought[i])
+
+        if pulled_arms.shape[0] > 0:
+            learner.update(pulled_arms[-1])
+
         return learner

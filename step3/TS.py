@@ -190,7 +190,7 @@ class TS(Learner):
 
 graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)
-learner = TS(4, env.prices[0], env.secondaries, env.num_product_sold[0], graph)
+learner = TS(4, env.prices, env.secondaries, env.num_product_sold[0], graph)
 
 for i in range(1000):
     pulled_arms = learner.pull_arm()

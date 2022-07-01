@@ -10,17 +10,32 @@ from Social_Influence.Page import Page
 
 
 class Simulator:
-    def __init__(self, graph, alpha_ratios, num_product_sold, secondaries, conversion_rates):
+    def __init__(self, graph, alpha_ratios=None, num_product_sold=None, secondaries=None,
+                 conversion_rates=None, mode='single_class'):
         self.graph = graph
-        self.alpha_ratios = alpha_ratios
-        self.num_product_sold = num_product_sold
+        if mode == 'multi_class':
+            self.alpha_ratios = alpha_ratios
+            self.num_product_sold = num_product_sold
+            self.conversion_rates = conversion_rates
+        if mode == 'single_class':
+            self.alpha_ratios = alpha_ratios[0]
+            self.num_product_sold = num_product_sold[0]
+            self.conversion_rates = conversion_rates[0]
         self.secondaries = secondaries
+
+    # setters useful to discretize in the case of multiple classes of customers!
+    def set_conversion_rates(self, conversion_rates):
         self.conversion_rates = conversion_rates
+
+    def set_num_product_sold(self, num_product_sold):
+        self.num_product_sold = num_product_sold
+
+    def set_alpha_ratios(self, alpha_ratios):
+        self.alpha_ratios = alpha_ratios
 
     @staticmethod
     def generateRandomQuantity(mean):
         deviation = mean - 1
-        # print("mean: "+str(mean) + " deviation: "+str(deviation))
         return random.randint(round(mean - deviation), round(mean + deviation))
 
     def simulate(self, selected_prices, customer=None):
@@ -58,6 +73,9 @@ class Simulator:
 
             # -----------------------------------------------------------------------------------
             # 4: CUSTOMERS' CHOICE BETWEEN BUYING AND NOT BUYING THE PRIMARY PRODUCT
+            aaa = self.conversion_rates
+            bbb = self.conversion_rates[primary.sequence_number]
+            ccc = self.conversion_rates[primary.sequence_number][selected_prices[primary.sequence_number]]
             if np.random.random() < self.conversion_rates[primary.sequence_number][
                 selected_prices[primary.sequence_number]]:  # PRIMARY PRODUCT BOUGHT
 
