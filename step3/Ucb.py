@@ -93,7 +93,7 @@ class Ucb(Learner):
         is_starting_node = True
 
         while len(customer.pages) > 0:
-            # action = Action(user=customer)
+            # action = Action(x=customer)
             # -----------------------------------------------------------------------------------
             # 2: CUSTOMERS' CHOICE BETWEEN OPENING A NEW TAB AND USING AN ALREADY OPENED ONE
             # randomized choice: choice of page 0-to-(|pages|-1) or creating a new page
@@ -160,8 +160,6 @@ env = EnvironmentPricing(4, graph, 1)
 learner = Ucb(4, env.prices, env.secondaries, env.num_product_sold[0], graph)
 
 for i in range(10000):
-    if i == 9900:
-        aaa = 1
     pulled_arms = learner.act()
     print(pulled_arms)
 
@@ -174,7 +172,7 @@ for i in range(10000):
     # TODO  non hardcodare
     if (i % 10 == 0) and (i != 0):
         learner.update(pulled_arms)
-
+    #print(learner.rewards_per_arm[0][0])
     #print("Number of rewards per product:", learner.n)
     #print("T:",learner.t)
     #print("Means: ",learner.means)

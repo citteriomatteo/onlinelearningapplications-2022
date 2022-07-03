@@ -171,13 +171,15 @@ for i in range(10000):
     if (i % 10 == 0) and (i != 0):
         learner.update(pulled_arms)
 
-    '''print("Number of rewards per product:", learner.n)
-    print("T:",learner.t)
-    print("Means: ",learner.means)
-    print("Widths:",learner.widths)
-    print("Estimated number of product sold: ",learner.num_product_sold_estimation)'''
+    #print("Number of rewards per product:", learner.n)
+    #print("Means: ",learner.means)
+    #print("Widths:",learner.widths)
+    #print("Estimated number of product sold: ",learner.num_product_sold_estimation)
+
+
 print(learner.means)
 print(learner.widths)
+print(learner.num_product_sold_estimation)
 aaa = [i[j] for i, j in zip(learner.nearbyReward, learner.currentBestArms)]
 print(aaa)
 print(sum(aaa))
