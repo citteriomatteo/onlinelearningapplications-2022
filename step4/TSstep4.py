@@ -179,10 +179,15 @@ class TS(Learner):
                                         + self.pulled_per_arm_batch - self.success_per_arm_batch
         for prod in range(self.n_products):
             for price in range(self.n_arms):
-                self.num_product_sold_estimation[prod][price] = np.mean(self.boughts_per_arm[prod][price])
+                if(self.boughts_per_arm[prod][price]!=0):
+                    self.num_product_sold_estimation[prod][price] = np.mean(self.boughts_per_arm[prod][price])
 
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
+
+
+    def updateHistory(self, arm_pulled, visited_products, num_bought_products):
+        super().update(arm_pulled, visited_products, num_bought_products)
 
 graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)
@@ -192,8 +197,23 @@ for i in range(10000):
     if i == 50:
         aaa = 1
     pulled_arms = learner.pull_arm()
+
+    #print(learner.rewards_per_arm)
     visited_products, num_bought_products, a = env.round(pulled_arms)
     learner.update(pulled_arms, visited_products, num_bought_products)
+    learner.updateHistory(pulled_arms, visited_products, num_bought_products)
+
+   # print("Estimation:", learner.boughts_per_arm)
+
     if (i % 10 == 0) and (i != 0):
         learner.update_beta_distributions()
-    print(pulled_arms)
+        #print(learner.beta_parameters)
+
+    #print("Beta:",learner.beta_parameters)
+    print("Pulledarms:",pulled_arms)
+    #print("Visited:",visited_products)
+    #print("Bought:",num_bought_products)
+    #print("Success per arm:",learner.success_per_arm_batch)
+    #print("Pull per arm:", learner.pulled_per_arm_batch)
+
+
