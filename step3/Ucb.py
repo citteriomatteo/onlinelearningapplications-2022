@@ -188,7 +188,4 @@ ax[1].set_title('Cumulative reward')
 ax[0].legend()
 ax[1].legend()
 plt.show()
-print(learner.means)
-print(learner.widths)
-print((learner.widths + learner.means) * ((learner.prices*learner.num_product_sold) + learner.nearbyReward))
 

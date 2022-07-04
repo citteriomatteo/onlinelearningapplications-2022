@@ -1,4 +1,8 @@
 import numpy as np
+from matplotlib import pyplot as plt
+
+import Settings
+from Pricing.Clairvoyant import Clairvoyant
 from Pricing.Learner import *
 from Pricing.pricing_environment import EnvironmentPricing
 from Settings import LAMBDA
@@ -54,39 +58,14 @@ class TS(Learner):
         :return: none
         :rtype: none
         """
-
-        self.currentBestArms = pulled_arm
-        self.nearbyReward = np.zeros((self.n_products, self.n_arms))
-        self.visit_probability_estimation = self.simulateTotalNearby(pulled_arm)
-        for prod in range(self.n_products):
-            for price in range(self.n_arms):
-                alpha_actual = self.beta_parameters[prod][price][0]
-                beta_actual = self.beta_parameters[prod][price][1]
-                for temp in range(self.n_products):
-                    alpha_near = self.beta_parameters[temp][self.currentBestArms[temp]][0]
-                    beta_near = self.beta_parameters[temp][self.currentBestArms[temp]][1]
-
-                    self.nearbyReward[prod][price] += (alpha_actual/(alpha_actual+beta_actual)) * self.visit_probability_estimation[prod][
-                        temp] * (alpha_near/(alpha_near+beta_near)) * self.num_product_sold[temp][
-                                                          self.currentBestArms[temp]] * self.prices[temp][
-                                                          self.currentBestArms[temp]]
-
-
-        # TODO vedere qua sotto che non ricordo
-        # self.nearbyReward = [self.nearby_reward(node) for node in range(self.n_products)]
-
-        # super(TS, self).update(pulled_arm, visited_products, num_bought_products)
         for prod in range(self.n_products):
             if visited_products[prod] == 1:
                 if num_bought_products[prod] > 0:
                     self.success_per_arm_batch[prod, pulled_arm[prod]] += 1
                 self.pulled_per_arm_batch[prod, pulled_arm[prod]] += 1
-
-        # for prod in range(self.n_products):
-        # self.beta_parameters[prod, pulled_arm[prod], 0] = self.beta_parameters[prod, pulled_arm[prod], 0] + reward[
-        # prod]
-        # self.beta_parameters[prod, pulled_arm[prod], 1] = self.beta_parameters[prod, pulled_arm[prod], 1] + 1.0 - \
-        # reward[prod]
+        current_prices = [i[j] for i, j in zip(self.prices, pulled_arm)]
+        current_reward = sum(num_bought_products * current_prices)
+        self.current_reward.append(current_reward)
 
     def simulateTotalNearby(self, selected_price):
         times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
@@ -177,8 +156,7 @@ class TS(Learner):
             t += 1
         return visited_products
 
-    # TODO dove la uso? non ricordo
-    def update_beta_distributions(self):
+    def update_beta_distributions(self, pulled_arm):
 
         self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + self.success_per_arm_batch[:, :]
         self.beta_parameters[:, :, 1] = self.beta_parameters[:, :,
@@ -187,15 +165,48 @@ class TS(Learner):
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
 
+        self.currentBestArms = pulled_arm
+        self.nearbyReward = np.zeros((self.n_products, self.n_arms))
+        self.visit_probability_estimation = self.simulateTotalNearby(pulled_arm)
+        for prod in range(self.n_products):
+            for price in range(self.n_arms):
+                alpha_actual = self.beta_parameters[prod][price][0]
+                beta_actual = self.beta_parameters[prod][price][1]
+                for temp in range(self.n_products):
+                    alpha_near = self.beta_parameters[temp][self.currentBestArms[temp]][0]
+                    beta_near = self.beta_parameters[temp][self.currentBestArms[temp]][1]
+
+                    self.nearbyReward[prod][price] += (alpha_actual / (alpha_actual + beta_actual)) * \
+                                                      self.visit_probability_estimation[prod][
+                                                          temp] * (alpha_near / (alpha_near + beta_near)) * \
+                                                      self.num_product_sold[temp][
+                                                          self.currentBestArms[temp]] * self.prices[temp][
+                                                          self.currentBestArms[temp]]
+        self.average_reward.append(np.mean(self.current_reward[-50:]))
+
 
 graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)
 learner = TS(4, env.prices, env.secondaries, env.num_product_sold[0], graph)
+clearvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
+best_revenue = clearvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
+best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
-for i in range(1000):
+for i in range(300):
     pulled_arms = learner.act()
-    visited_products, num_bought_products, a = env.round(pulled_arms)
-    learner.update(pulled_arms, visited_products, num_bought_products)
-    if (i % 10 == 0) and (i != 0):
-        learner.update_beta_distributions()
     print(pulled_arms)
+    for j in range(Settings.DAILY_INTERACTIONS):
+        visited_products, num_bought_products, a = env.round(pulled_arms)
+        learner.update(pulled_arms, visited_products, num_bought_products)
+    learner.update_beta_distributions(pulled_arms)
+
+fig, ax = plt.subplots(nrows=1,ncols=2)
+ax[0].plot(learner.average_reward, color='green', label='TS')
+ax[0].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
+ax[0].set_title('Average reward')
+ax[1].plot(np.cumsum(learner.average_reward), color='green', label='TS')
+ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
+ax[1].set_title('Cumulative reward')
+ax[0].legend()
+ax[1].legend()
+plt.show()
