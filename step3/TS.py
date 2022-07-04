@@ -58,6 +58,28 @@ class TS(Learner):
         :return: none
         :rtype: none
         """
+
+        self.currentBestArms = pulled_arm
+        self.nearbyReward = np.zeros((self.n_products, self.n_arms))
+        self.visit_probability_estimation = self.simulateTotalNearby(pulled_arm)
+        for prod in range(self.n_products):
+            for price in range(self.n_arms):
+                alpha_actual = self.beta_parameters[prod][price][0]
+                beta_actual = self.beta_parameters[prod][price][1]
+                for temp in range(self.n_products):
+                    alpha_near = self.beta_parameters[temp][self.currentBestArms[temp]][0]
+                    beta_near = self.beta_parameters[temp][self.currentBestArms[temp]][1]
+
+                    self.nearbyReward[prod][price] += (alpha_actual/(alpha_actual+beta_actual)) * self.visit_probability_estimation[prod][
+                        temp] * (alpha_near/(alpha_near+beta_near)) * self.num_product_sold[temp][
+                                                          self.currentBestArms[temp]] * self.prices[temp][
+                                                          self.currentBestArms[temp]]
+
+
+        # TODO vedere qua sotto che non ricordo
+        # self.nearbyReward = [self.nearby_reward(node) for node in range(self.n_products)]
+
+        # super(TS, self).update(pulled_arm, visited_products, num_bought_products)
         for prod in range(self.n_products):
             if visited_products[prod] == 1:
                 if num_bought_products[prod] > 0:

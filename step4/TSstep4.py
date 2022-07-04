@@ -34,7 +34,7 @@ class TS(Learner):
             beta = np.random.beta(self.beta_parameters[prod, :, 0], self.beta_parameters[prod, :, 1])
             # arm of the current product with highest expected reward
             # TODO: add expected reward
-            idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold_estimation[prod])))
+            idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold_estimation[prod]) + self.nearbyReward[prod]))
             # print("rewards prod %d: %s" % (prod, beta * self.prices[prod]))
             # print("NEARBY REWARDS - old - %d: %s" % (prod, self.expected_nearby_reward(prod)[prod]))
             # print("NEARBY REWARDS -check- %d: %s" % (prod, self.reward_of_node_without_nearby(prod)[prod]))
@@ -64,7 +64,7 @@ class TS(Learner):
                     beta_near = self.beta_parameters[temp][self.currentBestArms[temp]][1]
 
                     self.nearbyReward[prod][price] += (alpha_actual/(alpha_actual+beta_actual)) * self.visit_probability_estimation[prod][
-                        temp] * (alpha_near/(alpha_near+beta_near)) * self.num_product_sold_estimation[temp][
+                        temp] * (alpha_near/(alpha_near+beta_near))* self.num_product_sold_estimation[temp][
                                                           self.currentBestArms[temp]] * self.prices[temp][
                                                           self.currentBestArms[temp]]
 
@@ -194,20 +194,21 @@ env = EnvironmentPricing(4, graph, 1)
 learner = TS(4, env.prices, env.secondaries, graph)
 
 for i in range(10000):
-    if i == 50:
-        aaa = 1
+
     pulled_arms = learner.pull_arm()
 
     #print(learner.rewards_per_arm)
     visited_products, num_bought_products, a = env.round(pulled_arms)
-    learner.update(pulled_arms, visited_products, num_bought_products)
     learner.updateHistory(pulled_arms, visited_products, num_bought_products)
+    learner.update(pulled_arms, visited_products, num_bought_products)
+
 
    # print("Estimation:", learner.boughts_per_arm)
 
     if (i % 10 == 0) and (i != 0):
         learner.update_beta_distributions()
-        #print(learner.beta_parameters)
+        print(learner.beta_parameters)
+        print(learner.num_product_sold_estimation)
 
     #print("Beta:",learner.beta_parameters)
     print("Pulledarms:",pulled_arms)
@@ -215,5 +216,6 @@ for i in range(10000):
     #print("Bought:",num_bought_products)
     #print("Success per arm:",learner.success_per_arm_batch)
     #print("Pull per arm:", learner.pulled_per_arm_batch)
+    #print("Mean: ", learner.beta_parameters)
 
 
