@@ -98,7 +98,7 @@ class Ucb(Learner):
         is_starting_node = True
 
         while len(customer.pages) > 0:
-            # action = Action(user=customer)
+            # action = Action(x=customer)
             # -----------------------------------------------------------------------------------
             # 2: CUSTOMERS' CHOICE BETWEEN OPENING A NEW TAB AND USING AN ALREADY OPENED ONE
             # randomized choice: choice of page 0-to-(|pages|-1) or creating a new page

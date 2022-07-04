@@ -21,7 +21,7 @@ class Learner:
         # self.rewards = []
         # matrix n_products X n_arms X list of previous rewards
         self.rewards_per_arm = [[[] for i in range(n_arms)] for j in range(n_products)]
-        self.boughts_per_arm = [[[] for i in range(n_arms)] for j in range(n_products)]
+        self.boughts_per_arm = [[[0] for i in range(n_arms)] for j in range(n_products)]
         # list of pulled arm
         self.pulled = []
 

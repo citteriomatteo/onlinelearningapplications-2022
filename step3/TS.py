@@ -73,7 +73,7 @@ class TS(Learner):
 
 
         # TODO vedere qua sotto che non ricordo
-        self.nearbyReward = [self.nearby_reward(node) for node in range(self.n_products)]
+        # self.nearbyReward = [self.nearby_reward(node) for node in range(self.n_products)]
 
         # super(TS, self).update(pulled_arm, visited_products, num_bought_products)
         for prod in range(self.n_products):
