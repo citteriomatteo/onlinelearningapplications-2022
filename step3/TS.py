@@ -1,11 +1,9 @@
-import numpy as np
 from matplotlib import pyplot as plt
 
 import Settings
 from Pricing.Clairvoyant import Clairvoyant
 from Pricing.Learner import *
 from Pricing.pricing_environment import EnvironmentPricing
-from Settings import LAMBDA
 from Social_Influence.Graph import Graph
 from Social_Influence.Customer import Customer
 from Social_Influence.Page import Page
@@ -28,7 +26,6 @@ class TS(Learner):
 
     def act(self):
         """
-
         :return: for every product choose the arm to pull
         :rtype: list
         """
@@ -38,13 +35,9 @@ class TS(Learner):
             beta = np.random.beta(self.beta_parameters[prod, :, 0], self.beta_parameters[prod, :, 1])
             # arm of the current product with highest expected reward
             idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold[prod]) + self.nearbyReward[prod]))
-            # print("rewards prod %d: %s" % (prod, beta * self.prices[prod]))
-            # print("NEARBY REWARDS - old - %d: %s" % (prod, self.expected_nearby_reward(prod)[prod]))
-            # print("NEARBY REWARDS -check- %d: %s" % (prod, self.reward_of_node_without_nearby(prod)[prod]))
-            # print("NEARBY REWARDS - new - %d: %s" % (prod, self.expected_reward(prod)))
-        # print("arm pulled", idx)
         return idx
 
+    # TODO non viene mai usata
     def updateHistory(self, arm_pulled, visited_products, num_bought_products):
         super().update(arm_pulled, visited_products, num_bought_products)
 
@@ -53,8 +46,10 @@ class TS(Learner):
         update alpha and beta parameters
         :param pulled_arm: arm pulled for every product
         :type pulled_arm: list
-        :param reward: reward obtained for every product using the specified arm
-        :type reward: list
+        :param visited_products: for each product contains 1 if it has been visited; 0 otherwise
+        :type visited_products: list
+        :param num_bought_products: for each product it contains the number of products purchased
+        :type num_bought_products: list
         :return: none
         :rtype: none
         """
@@ -64,6 +59,7 @@ class TS(Learner):
                 if num_bought_products[prod] > 0:
                     self.success_per_arm_batch[prod, pulled_arm[prod]] += 1
                 self.pulled_per_arm_batch[prod, pulled_arm[prod]] += 1
+
         current_prices = [i[j] for i, j in zip(self.prices, pulled_arm)]
         current_reward = sum(num_bought_products * current_prices)
         self.current_reward.append(current_reward)
@@ -159,9 +155,10 @@ class TS(Learner):
 
     def update_beta_distributions(self, pulled_arm):
 
-        self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + self.success_per_arm_batch[:, :]
-        self.beta_parameters[:, :, 1] = self.beta_parameters[:, :,
-                                        1] + self.pulled_per_arm_batch - self.success_per_arm_batch
+        self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + \
+                                        self.success_per_arm_batch[:, :]
+        self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] + \
+                                        self.pulled_per_arm_batch - self.success_per_arm_batch
 
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
@@ -189,8 +186,8 @@ class TS(Learner):
 graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)
 learner = TS(4, env.prices, env.secondaries, env.num_product_sold[0], graph)
-clearvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
-best_revenue = clearvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
+clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
+best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
 best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
 for i in range(Settings.NUM_OF_DAYS):

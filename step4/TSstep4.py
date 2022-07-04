@@ -1,4 +1,4 @@
-import numpy as np
+from matplotlib import pyplot as plt
 from Pricing.Learner import *
 from Pricing.pricing_environment import EnvironmentPricing
 from Settings import LAMBDA
@@ -6,6 +6,7 @@ from Social_Influence.Graph import Graph
 from Social_Influence.Customer import Customer
 from Social_Influence.Page import Page
 import Settings
+from Pricing.Clairvoyant import Clairvoyant
 
 
 class TS(Learner):
@@ -25,7 +26,6 @@ class TS(Learner):
 
     def act(self):
         """
-
         :return: for every product choose the arm to pull
         :rtype: list
         """
@@ -34,13 +34,7 @@ class TS(Learner):
             # generate beta for every price of the current product
             beta = np.random.beta(self.beta_parameters[prod, :, 0], self.beta_parameters[prod, :, 1])
             # arm of the current product with highest expected reward
-            # TODO: add expected reward
             idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold_estimation[prod]) + self.nearbyReward[prod]))
-            # print("rewards prod %d: %s" % (prod, beta * self.prices[prod]))
-            # print("NEARBY REWARDS - old - %d: %s" % (prod, self.expected_nearby_reward(prod)[prod]))
-            # print("NEARBY REWARDS -check- %d: %s" % (prod, self.reward_of_node_without_nearby(prod)[prod]))
-            # print("NEARBY REWARDS - new - %d: %s" % (prod, self.expected_reward(prod)))
-        # print("arm pulled", idx)
         return idx
 
     def update_TS_History(self, pulled_arm, visited_products, num_bought_products):
@@ -48,8 +42,10 @@ class TS(Learner):
         update alpha and beta parameters
         :param pulled_arm: arm pulled for every product
         :type pulled_arm: list
-        :param reward: reward obtained for every product using the specified arm
-        :type reward: list
+        :param visited_products: for each product contains 1 if it has been visited; 0 otherwise
+        :type visited_products: list
+        :param num_bought_products: for each product it contains the number of products purchased
+        :type num_bought_products: list
         :return: none
         :rtype: none
         """
@@ -60,11 +56,10 @@ class TS(Learner):
                     self.success_per_arm_batch[prod, pulled_arm[prod]] += 1
                 self.pulled_per_arm_batch[prod, pulled_arm[prod]] += 1
 
-        # for prod in range(self.n_products):
-        # self.beta_parameters[prod, pulled_arm[prod], 0] = self.beta_parameters[prod, pulled_arm[prod], 0] + reward[
-        # prod]
-        # self.beta_parameters[prod, pulled_arm[prod], 1] = self.beta_parameters[prod, pulled_arm[prod], 1] + 1.0 - \
-        # reward[prod]
+        current_prices = [i[j] for i, j in zip(self.prices, pulled_arm)]
+        current_reward = sum(num_bought_products * current_prices)
+        self.current_reward.append(current_reward)
+
 
     def simulateTotalNearby(self, selected_price):
         times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
@@ -155,9 +150,7 @@ class TS(Learner):
             t += 1
         return visited_products
 
-    # TODO dove la uso? non ricordo
     def update_beta_distributions(self,pulled_arm):
-
         self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + self.success_per_arm_batch[:, :]
         self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] \
                                         + self.pulled_per_arm_batch - self.success_per_arm_batch
@@ -192,11 +185,15 @@ class TS(Learner):
 
         self.nearbyReward[np.isnan(self.nearbyReward)] = 0
 
+        self.average_reward.append(np.mean(self.current_reward[-50:]))
 
 
 graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)
 learner = TS(4, env.prices, env.secondaries, graph)
+clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
+best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
+best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
 for i in range(Settings.NUM_OF_DAYS):
     pulled_arms = learner.act()
@@ -206,4 +203,13 @@ for i in range(Settings.NUM_OF_DAYS):
         learner.update_TS_History(pulled_arms, visited_products, num_bought_products)
     learner.update_beta_distributions(pulled_arms)
 
-
+fig, ax = plt.subplots(nrows=1,ncols=2)
+ax[0].plot(learner.average_reward, color='green', label='TS')
+ax[0].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
+ax[0].set_title('Average reward')
+ax[1].plot(np.cumsum(learner.average_reward), color='green', label='TS')
+ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
+ax[1].set_title('Cumulative reward')
+ax[0].legend()
+ax[1].legend()
+plt.show()
