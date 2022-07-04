@@ -1,11 +1,7 @@
 import numpy as np
 import random
 
-from Action import Action
-
-from Settings import LAMBDA, CONVERSION_RATE
 from Social_Influence.Customer import Customer
-from Social_Influence.Graph import Graph
 from Social_Influence.Page import Page
 
 

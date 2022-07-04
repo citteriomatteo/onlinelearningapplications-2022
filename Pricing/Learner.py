@@ -14,8 +14,8 @@ class Learner:
         self.n_arms = n_arms
         self.n_products = n_products
 
-
-
+        self.current_reward = []
+        self.average_reward = []
         ####
         self.t = 1
         # self.rewards = []

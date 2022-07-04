@@ -22,7 +22,7 @@ class TS(Learner):
         self.currentBestArms = np.zeros(len(prices))
         self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
 
-    def pull_arm(self):
+    def act(self):
         """
 
         :return: for every product choose the arm to pull
@@ -193,7 +193,7 @@ env = EnvironmentPricing(4, graph, 1)
 learner = TS(4, env.prices, env.secondaries, env.num_product_sold[0], graph)
 
 for i in range(1000):
-    pulled_arms = learner.pull_arm()
+    pulled_arms = learner.act()
     visited_products, num_bought_products, a = env.round(pulled_arms)
     learner.update(pulled_arms, visited_products, num_bought_products)
     if (i % 10 == 0) and (i != 0):

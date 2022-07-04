@@ -162,12 +162,12 @@ for j in range(n_exp):
         opt = linear_sum_assignment(-p)
         opt_rew.append(p[opt].sum())
 
-        pulled_arm = learner_CD.pull_arm()
+        pulled_arm = learner_CD.act()
         reward = e_CD.round(pulled_arm)
         learner_CD.update(pulled_arm, reward)
         rew_CD.append(reward.sum())
 
-        pulled_arm = learner_UCB.pull_arm()
+        pulled_arm = learner_UCB.act()
         reward = e_UCB.round(pulled_arm)
         learner_UCB.update(pulled_arm, reward)
         rew_UCB.append(reward.sum())

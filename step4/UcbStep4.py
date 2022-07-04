@@ -1,6 +1,8 @@
 import numpy as np
+from matplotlib import pyplot as plt
 
 import Settings
+from Pricing.Clairvoyant import Clairvoyant
 from Pricing.Learner import *
 from Pricing.pricing_environment import EnvironmentPricing
 from Social_Influence.Customer import Customer
@@ -30,6 +32,8 @@ class Ucb(Learner):
         :return: for each product returns the arm to pull based on which one gives the highest reward
         :rtype: int
         """
+        aaa = (self.widths + self.means)
+        bbb = ((self.prices*self.num_product_sold_estimation) + self.nearbyReward)
         idx = np.argmax((self.widths + self.means) * ((self.prices*self.num_product_sold_estimation) + self.nearbyReward), axis=1)
         return idx
 
@@ -122,6 +126,9 @@ class Ucb(Learner):
 
     def updateHistory(self, arm_pulled, visited_products, num_bought_products):
         super().update(arm_pulled, visited_products, num_bought_products)
+        current_prices = [i[j] for i, j in zip(self.prices, arm_pulled)]
+        current_reward = sum(num_bought_products * current_prices)
+        self.current_reward.append(current_reward)
 
     def update(self, arm_pulled):
         """
@@ -132,6 +139,7 @@ class Ucb(Learner):
         :rtype: none
         """
         self.currentBestArms = arm_pulled
+        self.average_reward.append(np.mean(self.current_reward[-50:]))
         for prod in range(self.n_products):
             self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
             self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(self.boughts_per_arm[prod][arm_pulled[prod]])
@@ -144,6 +152,8 @@ class Ucb(Learner):
                     self.widths[prod][arm] = np.inf
         self.nearbyReward = np.zeros((self.n_products, self.n_arms))
         self.visit_probability_estimation = self.simulateTotalNearby(arm_pulled)
+        self.visit_probability_estimation[np.isnan(self.visit_probability_estimation)] = 0
+        self.num_product_sold_estimation[np.isnan(self.num_product_sold_estimation)] = 1
         for prod in range(self.n_products):
             for price in range(self.n_arms):
                 for temp in range(self.n_products):
@@ -155,29 +165,31 @@ class Ucb(Learner):
 graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)
 learner = Ucb(4, env.prices, env.secondaries, graph)
+clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
+best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
+best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
-for i in range(10000):
-
-    if i == 9990:
-        aaa = 1
+for i in range(Settings.NUM_OF_DAYS):
     pulled_arms = learner.act()
     print(pulled_arms)
+    for j in range(Settings.DAILY_INTERACTIONS):
+        visited_products, num_bought_products, a = env.round(pulled_arms)
+        learner.updateHistory(pulled_arms, visited_products, num_bought_products)
+    learner.update(pulled_arms)
 
-    visited_products, num_bought_products, a = env.round(pulled_arms)
-
-    learner.updateHistory(pulled_arms, visited_products, num_bought_products)
-
-    # TODO  non hardcodare
-    if (i % 10 == 0) and (i != 0):
-        learner.update(pulled_arms)
-
-    '''print("Number of rewards per product:", learner.n)
-    print("T:",learner.t)
-    print("Means: ",learner.means)
-    print("Widths:",learner.widths)
-    print("Estimated number of product sold: ",learner.num_product_sold_estimation)'''
 print(learner.means)
 print(learner.widths)
-aaa = [i[j] for i, j in zip(learner.nearbyReward, learner.currentBestArms)]
-print(aaa)
-print(sum(aaa))
+print((learner.widths + learner.means) * ((learner.prices*learner.num_product_sold_estimation) + learner.nearbyReward))
+fig, ax = plt.subplots(nrows=1,ncols=2)
+ax[0].plot(learner.average_reward, color='blue', label='UCB-1')
+ax[0].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
+ax[0].set_title('Average reward')
+ax[1].plot(np.cumsum(learner.average_reward), color='blue', label='UCB-1')
+ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
+ax[1].set_title('Cumulative reward')
+ax[0].legend()
+ax[1].legend()
+plt.show()
+print(learner.means)
+print(learner.widths)
+print((learner.widths + learner.means) * ((learner.prices*learner.num_product_sold_estimation) + learner.nearbyReward))
