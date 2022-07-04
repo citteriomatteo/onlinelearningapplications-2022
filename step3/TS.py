@@ -214,7 +214,7 @@ clearvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.sec
 best_revenue = clearvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
 best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
-for i in range(300):
+for i in range(Settings.NUM_OF_DAYS):
     pulled_arms = learner.act()
     print(pulled_arms)
     for j in range(Settings.DAILY_INTERACTIONS):

@@ -229,6 +229,6 @@ class ContextGenerator:
             learner.updateHistory(pulled_arms[i], visits[i], num_bought[i])
 
         if pulled_arms.shape[0] > 0:
-            learner.update(pulled_arms[-1])
+            learner.update_TS_History(pulled_arms[-1])
 
         return learner

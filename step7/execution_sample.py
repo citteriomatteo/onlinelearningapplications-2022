@@ -37,7 +37,7 @@ for i in range(1000):
 
     # TODO  non hardcodare
     if (i % 10 == 0) and (i != 0):
-        learner.update(pulled_arms)
+        learner.update_TS_History(pulled_arms)
 
 
 context_learner.print_mean()
