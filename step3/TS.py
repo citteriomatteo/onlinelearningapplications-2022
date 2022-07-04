@@ -198,4 +198,5 @@ for i in range(1000):
     learner.update(pulled_arms, visited_products, num_bought_products)
     if (i % 10 == 0) and (i != 0):
         learner.update_beta_distributions()
+        print(learner.beta_parameters)
     print(pulled_arms)
