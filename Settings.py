@@ -4,7 +4,7 @@ import numpy as np
 LAMBDA = 0.7
 
 # Number of days to test
-NUM_OF_DAYS = 350
+NUM_OF_DAYS = 500
 
 # Number of user interactions per day
 DAILY_INTERACTIONS = 50

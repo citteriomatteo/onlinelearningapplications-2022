@@ -69,7 +69,7 @@ class Clairvoyant(Learner):
         disaggr_average_total = 0
         for c in range(len(env.classes)):
             disaggr_average_total += env.classes["C" + str(c + 1)]["fraction"] \
-                                     * self.revenue_given_arms(arms=arms, chosen_class=c)
+                                     * self.revenue_given_arms(arms=arms[c], chosen_class=c)
 
         return disaggr_average_total
 
