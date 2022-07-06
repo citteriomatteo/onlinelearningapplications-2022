@@ -1,9 +1,9 @@
 import copy
 import numpy as np
 
+import Settings
 from step7.ContextNode import ContextNode
 from step7.ContextualLearner import ContextualLearner
-from step7.UcbStep7 import Ucb
 
 
 class ContextGenerator:
@@ -35,12 +35,16 @@ class ContextGenerator:
         self.contextual_learner = contextual_learner
         self.confidence = confidence
 
+        self.average_rewards = []
+
         self.context_tree = ContextNode(features, self.contextual_learner.get_root_learner())
+
         self.update_contextual_learner()
 
     def collect_daily_data(self, pulled_arms, visited_products, num_bought_products, features):
         """
         Collect the data produced by the environment in one day
+        :param average_rewards: average on the new rewards collected at day t, useful for the plots
         :param pulled_arms: arms that are pulled at day t
         :param visited_products: list of visited products at day t
         :param num_bought_products: list of bought products (in quantities) at day t
@@ -65,6 +69,11 @@ class ContextGenerator:
             self.collected_features = features
         else:
             self.collected_features = np.vstack((self.collected_features, features))
+
+    def update_average_rewards(self, current_features):
+        self.average_rewards.append(
+            np.mean((self.contextual_learner.get_learner_by_context(current_features=current_features))
+                    .current_reward[-Settings.DAILY_INTERACTIONS:]))
 
     def context_generation(self):
         """
@@ -229,6 +238,6 @@ class ContextGenerator:
             learner.updateHistory(pulled_arms[i], visits[i], num_bought[i])
 
         if pulled_arms.shape[0] > 0:
-            learner.update_TS_History(pulled_arms[-1])
+            learner.update(pulled_arms[-1])
 
         return learner

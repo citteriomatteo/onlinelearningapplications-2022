@@ -37,8 +37,6 @@ class Clairvoyant(Learner):
         :param arms: list of arms
         :type arms: list
         :param chosen_class: the user class given by the external of the method
-        :return:
-        :rtype:
         """
         nearby_reward = []
         self.visit_probability_estimation = self.simulateTotalNearby(arms, chosen_class)
@@ -58,7 +56,23 @@ class Clairvoyant(Learner):
         average_total = 0
         for i in range(5):
             average_total += (revenue[i]+nearby_reward[i])*self.alpha_ratios[chosen_class][i+1]
+
         return average_total
+
+    def disaggr_revenue_given_arms(self, arms, env):
+        """
+        Returns the revenue of a given combination of arms by weighting wrt all the classes (disaggregated average)
+        :param arms: list of arms
+        :type arms: list
+        :param env: environment, to access to all the classes
+        """
+        disaggr_average_total = 0
+        for c in range(len(env.classes)):
+            disaggr_average_total += env.classes["C" + str(c + 1)]["fraction"] \
+                                     * self.revenue_given_arms(arms=arms, chosen_class=c)
+
+        return disaggr_average_total
+
 
     def simulateTotalNearby(self, selected_price, chosen_class):
         times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))

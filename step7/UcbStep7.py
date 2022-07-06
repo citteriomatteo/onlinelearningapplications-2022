@@ -33,11 +33,8 @@ class Ucb(Learner):
         :return: returns the value associated with the optimal arm
         :rtype: float
         """
-        a = self.widths + self.means
-        b = self.prices * self.num_product_sold_estimation
-        c = a * b
-        d = c + self.nearbyReward
-        return np.max(d, axis=1)
+        return np.max(
+            (self.widths + self.means) * (self.prices * self.num_product_sold_estimation) + self.nearbyReward, axis=1)
 
     def totalNearbyRewardEstimation(self):
         """
@@ -96,6 +93,9 @@ class Ucb(Learner):
 
     def updateHistory(self, arm_pulled, visited_products, num_bought_products):
         super().update(arm_pulled, visited_products, num_bought_products)
+        current_prices = [i[j] for i, j in zip(self.prices, arm_pulled)]
+        current_reward = sum(num_bought_products * current_prices)
+        self.current_reward.append(current_reward)
 
     def update(self, arm_pulled):
         """

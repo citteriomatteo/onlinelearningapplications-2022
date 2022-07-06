@@ -1,6 +1,8 @@
 import numpy as np
 import random
 
+import Settings
+
 
 class Customer:
     """
@@ -9,7 +11,7 @@ class Customer:
              1 -> active
     """
 
-    def __init__(self, reservation_price, num_products, graph, env=None):
+    def __init__(self, reservation_price, num_products=Settings.NUM_PRODUCTS, graph=None, env=None):
         self.reservation_price = reservation_price
         self.products_state = np.zeros(shape=num_products)
         self.graph = graph
@@ -27,13 +29,18 @@ class Customer:
             self.features_class = 0
             self.features = [True, True]
 
+    def set_as_new(self):
+        """
+
+        """
+        self.products_state = np.zeros(shape=Settings.NUM_PRODUCTS)
+        self.pages = []
+        self.cart = []
 
     def get_right_user_class(self, classes=None):
         """
         Gets the class of the Customer considering the fractions of probabilities on the .json file.
         """
-        class_idx = 0
-        features = None
 
         probs = [classes[c]['fraction'] for c in classes]
         class_names = list(classes.keys())
