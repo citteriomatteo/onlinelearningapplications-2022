@@ -73,9 +73,16 @@ class Ucb(Learner):
         num_products = len(arm_pulled)
         '''update mean for every arm pulled for every product'''
         for prod in range(num_products):
-            self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
-            self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(self.boughts_per_arm[prod][arm_pulled[prod]])
-            self.visit_probability_estimation[prod] = self.times_visited_from_starting_node[prod] / self.times_bought_as_first_node[prod]
+            if len(self.rewards_per_arm[prod][arm_pulled[prod]]) > 0:
+                self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
+            if len(self.boughts_per_arm[prod][arm_pulled[prod]]) > 0:
+                self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(self.boughts_per_arm[prod][arm_pulled[prod]])
+            for t1 in range(self.n_arms):
+                for t2 in range(num_products):
+                    if self.times_bought_as_first_node[prod][t1][t2] > 0:
+                        self.visit_probability_estimation[prod][t1][t2] = self.times_visited_from_starting_node[prod][t1][t2] / self.times_bought_as_first_node[prod][t1][t2]
+                    else:
+                        self.visit_probability_estimation[prod][t1][t2] = 0
         self.visit_probability_estimation[np.isnan(self.visit_probability_estimation)] = 0
         '''update widths for every arm pulled for every product'''
         for prod in range(num_products):
@@ -87,7 +94,6 @@ class Ucb(Learner):
                     self.widths[prod][arm] = np.inf
         self.nearbyReward = self.totalNearbyRewardEstimation()
         self.nearbyReward[np.isnan(self.nearbyReward)] = 0
-        aaa = 1
 
 
 graph = Graph(mode="full", weights=True)
@@ -95,9 +101,6 @@ env = EnvironmentPricing(4, graph, 1)
 learner = Ucb(4, env.prices, env.secondaries)
 
 for i in range(10000):
-    if i == 9990:
-        aaa = learner.rewards_per_arm[0][0].count(1)
-        temp_means = learner.times_bought_as_first_node / learner.times_visited_as_first_node
     pulled_arms = learner.act()
     visited_products, num_bought_products, num_primary = env.round(pulled_arms)
     learner.updateHistory(pulled_arms, visited_products, num_bought_products, num_primary)

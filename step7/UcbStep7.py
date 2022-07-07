@@ -1,6 +1,14 @@
 import Settings
 from Pricing.Learner import *
 
+import numpy as np
+from matplotlib import pyplot as plt
+from Pricing.Clairvoyant import Clairvoyant
+from Pricing.pricing_environment import EnvironmentPricing
+from Social_Influence.Customer import Customer
+from Social_Influence.Graph import Graph
+from Social_Influence.Page import Page
+
 
 class Ucb(Learner):
     def __init__(self, n_arms, prices, secondaries, graph):
@@ -36,60 +44,92 @@ class Ucb(Learner):
         return np.max(
             (self.widths + self.means) * (self.prices * self.num_product_sold_estimation) + self.nearbyReward, axis=1)
 
-    def totalNearbyRewardEstimation(self):
-        """
-        :return: a matrix containing the nearby rewards for all products and all prices
-        """
-        # contains the conversion rate of the current best price for each product
-        conversion_of_current_best = [i[j] for i, j in zip(self.means, self.currentBestArms)]
-        nearbyRewardsTable = np.zeros(self.prices.shape)
-        # it is created a list containing all the nodes/products that must be visited (initially all the products)
-        nodesToVisit = [i for i in range(len(self.prices))]
-        for node in nodesToVisit:
-            copyList = nodesToVisit.copy()
-            copyList.remove(node)
-            # for each product and each price calculates its nearby reward
-            for price in range(len(self.prices[0])):
-                nearbyRewardsTable[node][price] += self.singleNearbyRewardEstimation(copyList,
-                                                                                     conversion_of_current_best,
-                                                                                     node, self.means[node][price])
-        return nearbyRewardsTable
+    def simulateTotalNearby(self, selected_price):
+        times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
+        for prod in range(self.n_products):
+            for iteration in range(364):
+                visited_products_ = self.simulateSingleNearby(selected_price, prod)
+                for j in range(len(visited_products_)):
+                    if (visited_products_[j] == 1) and j != prod:
+                        times_visited_from_starting_node[prod][j] += 1
+        return times_visited_from_starting_node / 1000
 
-    def singleNearbyRewardEstimation(self, nodesToVisit, conversion_estimation_for_best_arms, product,
-                                     probabilityToEnter):
-        """
-        :return: nearby reward of a single price of a single product
-        :rtype: float
-        """
-        valueToReturn = 0
-        isSecondary = True
-        # for each node that is possible to visit from the starting one, calculates its nearby reward
-        for j in (list(set(nodesToVisit).intersection(self.secondaries[product]))):
-            # the probability from a node to visit another one is given by the edge of the graph connecting the two
-            # nodes/products
-            probabilityToVisitSecondary = self.graph.search_edge_by_nodes(self.graph.search_product_by_number(product),
-                                                                          self.graph.search_product_by_number(
-                                                                              j)).probability
-            if not isSecondary:
-                probabilityToVisitSecondary = probabilityToVisitSecondary * Settings.LAMBDA
-            isSecondary = False
-            # the chance of buying a secondary product is given by the probability of visiting it, the probability
-            # to buy the primary and the probability to buy the secondary once its page is reached (its
-            # conversion rate)
-            probToBuyASecondary = conversion_estimation_for_best_arms[
-                                      j] * probabilityToVisitSecondary * probabilityToEnter
-            valueToReturn += self.prices[j][self.currentBestArms[j]] * probToBuyASecondary \
-                             * self.num_product_sold_estimation[j][self.currentBestArms[j]]
-            # the tree must be ran across deeper, but it is useless to visit it if the chance of reaching a deeper node
-            # is almost zero, so it is checked how much probable it is to going deeper before
-            # doing the other calculations
-            if (probToBuyASecondary > (1e-6)):
-                copyList = nodesToVisit.copy()
-                copyList.remove(j)
-                valueToReturn += self.singleNearbyRewardEstimation(copyList, conversion_estimation_for_best_arms, j,
-                                                                   probToBuyASecondary)
+    def simulateSingleNearby(self, selected_prices, starting_node):
+        customer = Customer(reservation_price=100, num_products=len(self.graph.nodes), graph=self.graph)
+        num_prod = starting_node
+        t = 0
+        visited_products = np.zeros(len(selected_prices))
+        num_bought_products = np.zeros(len(selected_prices))
+        primary = self.graph.nodes[num_prod]
+        second = self.graph.search_product_by_number(self.secondaries[primary.sequence_number][0])
+        third = self.graph.search_product_by_number(self.secondaries[primary.sequence_number][1])
+        page = Page(primary=primary, second=second, third=third)
+        customer.click_on(page)
+        visited_products[num_prod] = 1
+        is_starting_node = True
 
-        return valueToReturn
+        while len(customer.pages) > 0:
+            # action = Action(user=customer)
+            # -----------------------------------------------------------------------------------
+            # 2: CUSTOMERS' CHOICE BETWEEN OPENING A NEW TAB AND USING AN ALREADY OPENED ONE
+            # randomized choice: choice of page 0-to-(|pages|-1) or creating a new page
+            chosen_index = np.random.randint(low=0, high=len(customer.pages))
+            page = customer.pages[chosen_index]
+            primary = page.primary
+            second = page.second
+            third = page.third
+            p2 = self.graph.search_edge_by_nodes(primary, second).probability if (
+                    visited_products[second.sequence_number] == 0) else 0
+            p3 = self.graph.search_edge_by_nodes(primary, third).probability if (
+                    visited_products[third.sequence_number] == 0) else 0
+            # action.set_page(page)
+            superare = self.means[primary.sequence_number][selected_prices[primary.sequence_number]]
+            # -----------------------------------------------------------------------------------
+            # 4: CUSTOMERS' CHOICE BETWEEN BUYING AND NOT BUYING THE PRIMARY PRODUCT
+            if (is_starting_node) or (np.random.random() < superare):  # PRIMARY PRODUCT BOUGHT
+                is_starting_node = False
+
+                quantity = 0
+                customer.add_product(product=primary, quantity=quantity)
+                page.set_bought(True)
+                # action.set_quantity_bought(quantity=quantity)
+                num_bought_products[page.primary.sequence_number] += quantity
+
+                # -----------------------------------------------------------------------------------
+                # 5: CUSTOMERS' CLICK CHOICE BETWEEN: SECOND PRODUCT, THIRD PRODUCT OR CLOSE PAGE
+                choice = [None] * 2
+
+                if np.random.random() < p2:  # SECONDARY BOUGHT
+                    choice[0] = 1
+                    visited_products[second.sequence_number] += 1
+                if np.random.random() < p3:  # TERTIARY BOUGHT
+                    choice[1] = 1
+                    visited_products[third.sequence_number] += 1
+
+                if choice[0] == 1:  # SECONDARY PRODUCT CHOSEN
+                    # CREATION OF THE NEW PAGE
+                    new_primary = second
+                    new_second = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][0])
+                    new_third = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][1])
+
+                    # --- page creation and insertion in the list of customer's pages ---
+                    new_page = Page(new_primary, new_second, new_third)
+                    customer.add_new_page(new_page)
+
+                if choice[1] == 1:  # THIRD PRODUCT CHOSEN
+                    # CREATION OF THE NEW PAGE
+                    new_primary = third
+                    new_second = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][0])
+                    new_third = self.graph.search_product_by_number(self.secondaries[new_primary.sequence_number][1])
+
+                    # --- page creation and insertion in the list of customer's pages ---
+                    new_page = Page(new_primary, new_second, new_third)
+                    customer.add_new_page(new_page)
+
+            customer.direct_close_page(page)
+            # action.compute_for_social_influence(graph=self.graph)
+            t += 1
+        return visited_products
 
     def updateHistory(self, arm_pulled, visited_products, num_bought_products):
         super().update(arm_pulled, visited_products, num_bought_products)
@@ -120,4 +160,14 @@ class Ucb(Learner):
                     self.widths[prod][arm] = np.sqrt((2 * np.max(np.log(self.t)) / self.n[prod, arm]))
                 else:
                     self.widths[prod][arm] = np.inf
-        self.nearbyReward = self.totalNearbyRewardEstimation()
+        self.nearbyReward = np.zeros((self.n_products, self.n_arms))
+        self.visit_probability_estimation = self.simulateTotalNearby(arm_pulled)
+        self.visit_probability_estimation[np.isnan(self.visit_probability_estimation)] = 0
+        self.num_product_sold_estimation[np.isnan(self.num_product_sold_estimation)] = 1
+        for prod in range(self.n_products):
+            for price in range(self.n_arms):
+                for temp in range(self.n_products):
+                    self.nearbyReward[prod][price] += self.means[prod][price] * self.visit_probability_estimation[prod][
+                        temp] * self.means[temp][self.currentBestArms[temp]] * self.num_product_sold_estimation[temp][
+                                                          self.currentBestArms[temp]] * self.prices[temp][
+                                                          self.currentBestArms[temp]]
