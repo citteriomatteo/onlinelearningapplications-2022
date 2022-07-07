@@ -12,7 +12,7 @@ from step7.UcbStep7 import Ucb
 from step7.TSstep7 import TS
 from matplotlib import pyplot as plt
 
-mode = 'Ucb'
+mode = 'TS'
 color = None
 
 graph = Graph(mode="full", weights=True)

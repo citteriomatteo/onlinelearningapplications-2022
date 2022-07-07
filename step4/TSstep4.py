@@ -37,7 +37,7 @@ class TS(Learner):
             idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold_estimation[prod]) + self.nearbyReward[prod]))
         return idx
 
-    def update_TS_History(self, pulled_arm, visited_products, num_bought_products):
+    def updateHistory(self, pulled_arm, visited_products, num_bought_products):
         """
         update alpha and beta parameters
         :param pulled_arm: arm pulled for every product
@@ -150,7 +150,7 @@ class TS(Learner):
             t += 1
         return visited_products
 
-    def update_beta_distributions(self,pulled_arm):
+    def update(self, pulled_arm):
         self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + self.success_per_arm_batch[:, :]
         self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] \
                                         + self.pulled_per_arm_batch - self.success_per_arm_batch
@@ -175,8 +175,8 @@ class TS(Learner):
                 for temp in range(self.n_products):
                     alpha_near = self.beta_parameters[temp][self.currentBestArms[temp]][0]
                     beta_near = self.beta_parameters[temp][self.currentBestArms[temp]][1]
-
-                    self.nearbyReward[prod][price] += (alpha_actual / (alpha_actual + beta_actual)) * \
+                    if (self.visit_probability_estimation[prod][temp] != 0)  or (self.num_product_sold_estimation[temp][self.currentBestArms[temp]] != np.inf):
+                        self.nearbyReward[prod][price] += (alpha_actual / (alpha_actual + beta_actual)) * \
                                                       self.visit_probability_estimation[prod][
                                                           temp] * (alpha_near / (alpha_near + beta_near)) * \
                                                       self.num_product_sold_estimation[temp][
@@ -200,8 +200,8 @@ for i in range(Settings.NUM_OF_DAYS):
     print(pulled_arms)
     for j in range(Settings.DAILY_INTERACTIONS):
         visited_products, num_bought_products, a = env.round(pulled_arms)
-        learner.update_TS_History(pulled_arms, visited_products, num_bought_products)
-    learner.update_beta_distributions(pulled_arms)
+        learner.updateHistory(pulled_arms, visited_products, num_bought_products)
+    learner.update(pulled_arms)
 
 fig, ax = plt.subplots(nrows=1,ncols=2)
 ax[0].plot(learner.average_reward, color='green', label='TS')

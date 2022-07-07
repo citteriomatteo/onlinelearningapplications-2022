@@ -31,7 +31,7 @@ class UCB_Sliding_Window(Learner):
         return idx
 
     def updateHistory(self, arm_pulled, visited_products, num_bought_products, num_primary):
-        super().update_TS_History(arm_pulled, visited_products, num_bought_products)
+        super().updateHistory(arm_pulled, visited_products, num_bought_products)
         self.times_visited_as_first_node[num_primary][arm_pulled[num_primary]] += 1
         for i in range(len(visited_products)):
             if (visited_products[i] == 1) and i != num_primary:

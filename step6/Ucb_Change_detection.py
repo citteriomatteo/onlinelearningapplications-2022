@@ -78,7 +78,7 @@ class Ucb_Change_detection(Learner):
                     quantity=1
                 else:
                     quantity=0
-                if self.detections[prod][arm_pulled[prod]].update_TS_History(quantity):  # non ho reward nella funzione
+                if self.detections[prod][arm_pulled[prod]].updateHistory(quantity):  # non ho reward nella funzione
                     self.detections[prod][arm_pulled[prod]].append(self.t)
                     self.valid_reward_per_arms[prod][arm_pulled[prod]] = []
                     self.change_detection[prod][arm_pulled[prod]].reset()
@@ -164,12 +164,12 @@ for j in range(n_exp):
 
         pulled_arm = learner_CD.act()
         reward = e_CD.round(pulled_arm)
-        learner_CD.update_TS_History(pulled_arm, reward)
+        learner_CD.updateHistory(pulled_arm, reward)
         rew_CD.append(reward.sum())
 
         pulled_arm = learner_UCB.act()
         reward = e_UCB.round(pulled_arm)
-        learner_UCB.update_TS_History(pulled_arm, reward)
+        learner_UCB.updateHistory(pulled_arm, reward)
         rew_UCB.append(reward.sum())
 
     regret_cusum[j, :] = np.cumsum(opt_rew)-np.cumsum(rew_CD)
