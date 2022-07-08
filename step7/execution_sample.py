@@ -12,11 +12,11 @@ from step7.UcbStep7 import Ucb
 from step7.TSstep7 import TS
 from matplotlib import pyplot as plt
 
-mode = 'TS'
+mode = 'Ucb'
 color = None
 
 graph = Graph(mode="full", weights=True)
-env = EnvironmentPricing(4, graph, 1, mode='multi_class')
+env = EnvironmentPricing(4, graph, 1)
 context_learner = ContextualLearner(features=env.features, n_arms=env.n_arms, n_products=len(env.graph.nodes))
 
 clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
@@ -47,6 +47,9 @@ context_generator = ContextGenerator(features=env.features, contextual_learner=c
 
 for i in range(Settings.NUM_OF_DAYS):
 
+    if(i==100):
+        aaa = 0
+
     if i % 14 == 0 and i != 0:
         context_generator.context_generation()
 
@@ -69,6 +72,7 @@ for i in range(Settings.NUM_OF_DAYS):
     context_generator.update_average_rewards(current_features=customer.features)
     learner.update(pulled_arms)
 
+context_learner.print_mean()
 fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 10))
 ax[0].plot(context_generator.average_rewards, color=color, label=mode)
 ax[0].axhline(y=best_revenue, color='grey', linestyle='--', label='Clairvoyant (Aggregate)')

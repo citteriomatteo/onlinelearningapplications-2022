@@ -47,7 +47,7 @@ class TS(Learner):
             # generate beta for every price of the current product
             beta = np.random.beta(self.beta_parameters[prod, :, 0], self.beta_parameters[prod, :, 1])
             # arm of the current product with highest expected reward
-            idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold_estimation[prod]) + self.nearbyReward[prod]))
+            idx[prod] = np.max(beta * ((self.prices[prod] * self.num_product_sold_estimation[prod]) + self.nearbyReward[prod]))
         return idx
 
     def updateHistory(self, pulled_arm, visited_products, num_bought_products):

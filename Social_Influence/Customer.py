@@ -19,11 +19,12 @@ class Customer:
         self.cart = []
         if env is not None:
             self.features_class, self.features = self.get_right_user_class(env.classes)
-
+            '''
             # setting of the simulator with the characteristics related to this specific customer's class
             env.simulator.set_alpha_ratios(env.alpha_ratios[self.features_class])
             env.simulator.set_num_product_sold(env.num_product_sold[self.features_class])
             env.simulator.set_conversion_rates(env.conversion_rates[self.features_class])
+            '''
 
         else:       # if features are not useful (step 1-6) -> force the Customer to the class 1
             self.features_class = 0

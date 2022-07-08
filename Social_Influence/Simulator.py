@@ -9,6 +9,7 @@ class Simulator:
     def __init__(self, graph, alpha_ratios=None, num_product_sold=None, secondaries=None,
                  conversion_rates=None, mode='single_class'):
         self.graph = graph
+        '''
         if mode == 'multi_class':
             self.alpha_ratios = alpha_ratios
             self.num_product_sold = num_product_sold
@@ -17,6 +18,10 @@ class Simulator:
             self.alpha_ratios = alpha_ratios[0]
             self.num_product_sold = num_product_sold[0]
             self.conversion_rates = conversion_rates[0]
+        '''
+        self.alpha_ratios = alpha_ratios
+        self.num_product_sold = num_product_sold
+        self.conversion_rates = conversion_rates
         self.secondaries = secondaries
 
     # setters useful to discretize in the case of multiple classes of customers!
@@ -39,7 +44,8 @@ class Simulator:
         if customer is None:
             customer = Customer(reservation_price=100, num_products=len(self.graph.nodes), graph=self.graph)
 
-        num_prod = random.choices([0, 1, 2, 3, 4], self.alpha_ratios[1:], k=1)[0]
+        aaaa = self.alpha_ratios[customer.features_class][1:]
+        num_prod = random.choices([0, 1, 2, 3, 4], self.alpha_ratios[customer.features_class][1:], k=1)[0]
 
         t = 0
         visited_products = np.zeros(5)
@@ -69,14 +75,11 @@ class Simulator:
 
             # -----------------------------------------------------------------------------------
             # 4: CUSTOMERS' CHOICE BETWEEN BUYING AND NOT BUYING THE PRIMARY PRODUCT
-            aaa = self.conversion_rates
-            bbb = self.conversion_rates[primary.sequence_number]
-            ccc = self.conversion_rates[primary.sequence_number][selected_prices[primary.sequence_number]]
-            if np.random.random() < self.conversion_rates[primary.sequence_number][
+            if np.random.random() < self.conversion_rates[customer.features_class][primary.sequence_number][
                 selected_prices[primary.sequence_number]]:  # PRIMARY PRODUCT BOUGHT
 
                 quantity = self.generateRandomQuantity(
-                    self.num_product_sold[primary.sequence_number][selected_prices[primary.sequence_number]])
+                    self.num_product_sold[customer.features_class][primary.sequence_number][selected_prices[primary.sequence_number]])
                 # customer.add_product(product=primary, quantity=quantity)
                 page.set_bought(True)
                 num_bought_products[page.primary.sequence_number] += quantity

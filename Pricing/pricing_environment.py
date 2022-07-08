@@ -6,7 +6,7 @@ from Pricing.user_data_generator import StandardDataGenerator
 
 
 class EnvironmentPricing:
-    def __init__(self, n_arms, graph, probabilities, resources="../json/dataUsers.json", mode='single_class'):
+    def __init__(self, n_arms, graph, probabilities, resources="../json/dataUsers.json"):
         self.n_arms = n_arms
         self.probabilities = probabilities
 
@@ -21,7 +21,7 @@ class EnvironmentPricing:
         self.secondaries = self.user_data.get_secondaries()
         self.graph = graph
         self.simulator = Simulator(self.graph, self.alpha_ratios, self.num_product_sold, self.secondaries,
-                                   self.conversion_rates, mode=mode)
+                                   self.conversion_rates)
         self.theta = np.random.dirichlet(np.ones(len(self.graph.nodes)), size=1)
         self.arms_features = np.random.binomial(1, 0.5, size=(len(self.graph.edges), len(self.graph.nodes)))
         self.lam = Settings.LAMBDA

@@ -1,4 +1,5 @@
 import copy
+import numpy as np
 
 
 class ContextNode:
@@ -59,7 +60,21 @@ class ContextNode:
     def print_mean(self):
         if self.left_child:
             self.left_child.print_mean()
+        sos = np.zeros((5,4))
+        for i in range(5):
+            for j in range(4):
+                sos[i][j] = sum(self.base_learner.rewards_per_arm[i][j])
+        sos1 = np.zeros((5, 4))
+        for i in range(5):
+            for j in range(4):
+                sos1[i][j] = len(self.base_learner.rewards_per_arm[i][j])
         print("Features of the context: ", self.features_subspace)
-        print("[ " + str(self.base_learner.means) + " ]"),
+        print("[ " + str(self.base_learner.means) + " ]")
+        print("Widths of the context: ", self.features_subspace)
+        print("[ " + str(self.base_learner.widths) + " ]")
+        print("Pulled per arms: ")
+        print(sos1)
+        print("Successes per arms: ")
+        print(sos)
         if self.right_child:
             self.right_child.print_mean()
