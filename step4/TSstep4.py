@@ -185,7 +185,7 @@ class TS(Learner):
 
         self.nearbyReward[np.isnan(self.nearbyReward)] = 0
 
-        self.average_reward.append(np.mean(self.current_reward[-50:]))
+        self.average_reward.append(np.mean(self.current_reward[-Settings.DAILY_INTERACTIONS:]))
 
 
 graph = Graph(mode="full", weights=True)

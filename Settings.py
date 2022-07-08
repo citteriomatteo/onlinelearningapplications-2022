@@ -4,10 +4,10 @@ import numpy as np
 LAMBDA = 0.7
 
 # Number of days to test
-NUM_OF_DAYS = 500
+NUM_OF_DAYS = 1000
 
 # Number of user interactions per day
-DAILY_INTERACTIONS = 50
+DAILY_INTERACTIONS = 500
 
 # Total amount of products in the problem
 NUM_PRODUCTS = 5

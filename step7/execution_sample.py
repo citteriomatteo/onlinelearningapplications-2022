@@ -47,20 +47,19 @@ context_generator = ContextGenerator(features=env.features, contextual_learner=c
 
 for i in range(Settings.NUM_OF_DAYS):
 
-    if(i==100):
-        aaa = 0
+    print("DAY ", i)
 
     if i % 14 == 0 and i != 0:
         context_generator.context_generation()
 
-    customer = Customer(reservation_price=100, num_products=len(graph.nodes), graph=graph, env=env)
-
-    learner = context_learner.get_learner_by_context(current_features=customer.features)
-
-    pulled_arms = learner.act()
-    print("Context "+ str(customer.features) +" :" + str(pulled_arms))
-
     for j in range(Settings.DAILY_INTERACTIONS):
+
+        customer = Customer(reservation_price=100, num_products=len(graph.nodes), graph=graph, env=env)
+
+        learner = context_learner.get_learner_by_context(current_features=customer.features)
+
+        pulled_arms = learner.act()
+
         visited_products, num_bought_products, a = env.round(pulled_arms, customer)
         learner.updateHistory(pulled_arms, visited_products, num_bought_products)
         context_generator.collect_daily_data(pulled_arms=pulled_arms,
@@ -77,11 +76,11 @@ fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 10))
 ax[0].plot(context_generator.average_rewards, color=color, label=mode)
 ax[0].axhline(y=best_revenue, color='grey', linestyle='--', label='Clairvoyant (Aggregate)')
 ax[0].axhline(y=best_disaggr_revenue, color='black', linestyle='--', label='Clairvoyant (Disaggregate)')
-ax[0].set_title('Average reward')
+ax[0].set_title('Average reward (for Context Generation)')
 ax[1].plot(np.cumsum(context_generator.average_rewards), color=color, label=mode)
 ax[1].plot(np.cumsum(best_revenue_array), color='grey', linestyle='--', label='Clairvoyant (Aggregate)')
 ax[1].plot(np.cumsum(best_disaggr_revenue_array), color='black', linestyle='--', label='Clairvoyant (Disaggregate)')
-ax[1].set_title('Cumulative reward')
+ax[1].set_title('Cumulative reward (for Context Generation)')
 ax[0].legend()
 ax[1].legend()
 plt.show()

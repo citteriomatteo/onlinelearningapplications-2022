@@ -139,7 +139,7 @@ class Ucb(Learner):
         :rtype: none
         """
         self.currentBestArms = arm_pulled
-        self.average_reward.append(np.mean(self.current_reward[-50:]))
+        self.average_reward.append(np.mean(self.current_reward[-Settings.DAILY_INTERACTIONS:]))
         for prod in range(self.n_products):
             self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
             self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(self.boughts_per_arm[prod][arm_pulled[prod]])

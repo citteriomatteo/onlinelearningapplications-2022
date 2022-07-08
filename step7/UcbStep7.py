@@ -27,6 +27,12 @@ class Ucb(Learner):
     def reset(self):
         self.__init__(self.n_arms, self.prices, self.graph)
 
+    def isUcb(self):
+        return True
+
+    def isTS(self):
+        return False
+
     def act(self):
         """
         :return: for each product returns the arm to pull based on which one gives the highest reward
@@ -41,8 +47,12 @@ class Ucb(Learner):
         :return: returns the value associated with the optimal arm
         :rtype: float
         """
+        aaa = (self.widths + self.means)
+        bbb = (self.prices * self.num_product_sold_estimation)
+        ccc = aaa * bbb + self.nearbyReward
+
         return np.max(
-            (self.widths + self.means) * (self.prices * self.num_product_sold_estimation) + self.nearbyReward, axis=1)
+            ccc, axis=1)
 
     def simulateTotalNearby(self, selected_price):
         times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
@@ -164,6 +174,8 @@ class Ucb(Learner):
         self.visit_probability_estimation = self.simulateTotalNearby(arm_pulled)
         self.visit_probability_estimation[np.isnan(self.visit_probability_estimation)] = 0
         self.num_product_sold_estimation[np.isnan(self.num_product_sold_estimation)] = 1
+        self.num_product_sold_estimation[self.num_product_sold_estimation == 0] = 1
+
         for prod in range(self.n_products):
             for price in range(self.n_arms):
                 for temp in range(self.n_products):
@@ -171,3 +183,34 @@ class Ucb(Learner):
                         temp] * self.means[temp][self.currentBestArms[temp]] * self.num_product_sold_estimation[temp][
                                                           self.currentBestArms[temp]] * self.prices[temp][
                                                           self.currentBestArms[temp]]
+
+    def update_for_all_arms(self):
+
+        for prod in range(self.n_products):
+            for price in range(self.n_arms):
+                if len(self.rewards_per_arm[prod][price]) > 0:
+                    new_mean = np.mean(self.rewards_per_arm[prod][price])
+                else:
+                    new_mean = 0
+                self.means[prod][price] = new_mean
+                sold_estimation = np.mean(self.boughts_per_arm[prod][price])
+                if not np.isnan(sold_estimation):  # to avoid Nan values in the matrix
+                    self.num_product_sold_estimation[prod][price] = sold_estimation
+        for prod in range(self.n_products):
+            for arm in range(self.n_arms):
+                self.n[prod, arm] = len(self.rewards_per_arm[prod][arm])
+                if (self.n[prod, arm]) > 0:
+                    self.widths[prod][arm] = np.sqrt((2 * np.max(np.log(self.t)) / self.n[prod, arm]))
+                else:
+                    self.widths[prod][arm] = np.inf
+        self.nearbyReward = np.zeros((self.n_products, self.n_arms))
+        self.visit_probability_estimation = np.zeros((5, 5))
+        self.visit_probability_estimation[np.isnan(self.visit_probability_estimation)] = 0
+        self.num_product_sold_estimation[np.isnan(self.num_product_sold_estimation)] = 1
+        self.num_product_sold_estimation[self.num_product_sold_estimation == 0] = 1
+        for prod in range(self.n_products):
+            for price in range(self.n_arms):
+                for temp in range(self.n_products):
+                    self.nearbyReward[prod][price] = 0
+
+        self.nearbyReward[np.isnan(self.nearbyReward)] = 0

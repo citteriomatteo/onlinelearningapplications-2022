@@ -5,6 +5,9 @@ import Settings
 from step7.ContextNode import ContextNode
 from step7.ContextualLearner import ContextualLearner
 
+from step7.UcbStep7 import Ucb
+from step7.TSstep7 import TS
+
 
 class ContextGenerator:
     """
@@ -98,11 +101,17 @@ class ContextGenerator:
 
         features, values_after_split, right_learners, left_learners = self.iterate_over_features(leaf)
         # now get the max value after the split and the index
-        max_value = np.max(values_after_split)
+        max_value = -1
+        for i in range(len(values_after_split)):
+            temp_max = np.max(values_after_split[i])
+            if not np.isinf(temp_max) and temp_max > max_value:
+                max_value = temp_max
+
+        # max_value = np.max(values_after_split)
 
 
         # at the beginning, values will be all inf due to a lack of samples -> NO SPLIT IN THIS CASE!
-        if np.isinf(max_value):
+        if max_value == -1:
             return
 
         # Checks in which side there is the maximum value (to index the specific feature)
@@ -123,7 +132,8 @@ class ContextGenerator:
             self.update_contextual_learner()
             print("AFTER SPLIT: \n")
             self.contextual_learner.print_context_tree()
-
+        else:
+            aaa = 0
 
     def iterate_over_features(self, leaf):
         """
@@ -180,12 +190,12 @@ class ContextGenerator:
             left_learner = self.get_offline_trained_learner(pulled_arms=self.collected_arms[left_split_indices],
                                                             visits=self.collected_visits[left_split_indices],
                                                             num_bought=self.collected_bought_products[
-                                                                left_split_indices],
+                                                                left_split_indices]
                                                             )
             right_learner = self.get_offline_trained_learner(pulled_arms=self.collected_arms[right_split_indices],
                                                              visits=self.collected_visits[right_split_indices],
                                                              num_bought=self.collected_bought_products[
-                                                                 right_split_indices],
+                                                                 right_split_indices]
                                                              )
             left_value = left_learner.get_opt_arm_value()
             right_value = right_learner.get_opt_arm_value()
@@ -232,12 +242,20 @@ class ContextGenerator:
         """
 
         # TODO: probably need to make a deepcopy of the root and put the children to None
-        learner = copy.deepcopy(self.contextual_learner.get_root_learner())
+        # learner = copy.deepcopy(self.contextual_learner.get_root_learner())
+
+        learner = None
+
+        root_learner = self.contextual_learner.get_root_learner()
+        if root_learner.isUcb():
+            learner = Ucb(4, root_learner.prices, root_learner.secondaries, root_learner.graph)
+        else:
+            learner = TS(4, root_learner.prices, root_learner.secondaries, root_learner.graph)
 
         for i in range(len(pulled_arms)):
             learner.updateHistory(pulled_arms[i], visits[i], num_bought[i])
 
         if pulled_arms.shape[0] > 0:
-            learner.update(pulled_arms[-1])
+            learner.update_for_all_arms()
 
         return learner

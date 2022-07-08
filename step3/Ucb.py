@@ -57,7 +57,7 @@ class Ucb(Learner):
         self.currentBestArms = arm_pulled
         self.nearbyReward = np.zeros((self.n_products, self.n_arms))
         self.visit_probability_estimation = self.simulateTotalNearby(arm_pulled)
-        self.average_reward.append(np.mean(self.current_reward[-50:]))
+        self.average_reward.append(np.mean(self.current_reward[-Settings.DAILY_INTERACTIONS:]))
         for prod in range(self.n_products):
             for price in range(self.n_arms):
                 for temp in range(self.n_products):

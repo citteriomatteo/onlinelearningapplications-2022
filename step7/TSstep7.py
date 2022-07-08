@@ -24,6 +24,12 @@ class TS(Learner):
         self.currentBestArms = np.zeros(len(prices))
         self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
 
+    def isUcb(self):
+        return False
+
+    def isTS(self):
+        return True
+
     def act(self):
         """
         :return: for every product choose the arm to pull
@@ -198,4 +204,27 @@ class TS(Learner):
 
         self.nearbyReward[np.isnan(self.nearbyReward)] = 0
 
-        self.average_reward.append(np.mean(self.current_reward[-50:]))
+        self.average_reward.append(np.mean(self.current_reward[-Settings.DAILY_INTERACTIONS:]))
+
+    def update_for_all_arms(self):
+
+        self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + self.success_per_arm_batch[:, :]
+        self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] \
+                                        + self.pulled_per_arm_batch - self.success_per_arm_batch
+        for prod in range(self.n_products):
+            for price in range(self.n_arms):
+                if(self.boughts_per_arm[prod][price]!=0):
+                    self.num_product_sold_estimation[prod][price] = np.mean(self.boughts_per_arm[prod][price])
+                    if(self.num_product_sold_estimation[prod][price]==0):
+                        self.num_product_sold_estimation[prod][price] = np.inf
+
+
+        self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
+        self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
+
+        self.nearbyReward = np.zeros((self.n_products, self.n_arms))
+        self.visit_probability_estimation = np.zeros((5, 5))
+
+        self.nearbyReward[np.isnan(self.nearbyReward)] = 0
+
+        self.average_reward.append(np.mean(self.current_reward[-Settings.DAILY_INTERACTIONS:]))
