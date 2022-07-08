@@ -15,11 +15,12 @@ class TS(Learner):
         self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.secondaries = secondaries
-        self.num_product_sold_estimation = np.ones(prices.shape)
+        #self.num_product_sold_estimation = np.ones(prices.shape)
         self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
         self.times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
         self.times_visited_as_first_node = np.zeros(self.n_products)
         self.nearbyReward = np.zeros(prices.shape)
+        self.num_product_sold_estimation = np.ones(prices.shape) * np.inf
 
     def pull_arm(self):
         """
@@ -40,7 +41,7 @@ class TS(Learner):
         # print("arm pulled", idx)
         return idx
 
-    def update(self, pulled_arm, visited_products, num_bought_products, num_primary):
+    def updateHistory(self, pulled_arm, visited_products, num_bought_products, num_primary):
         """
         update alpha and beta parameters
         :param pulled_arm: arm pulled for every product
@@ -160,7 +161,7 @@ for i in range(10000):
         aaa = 1
     pulled_arms = learner.pull_arm()
     visited_products, num_bought_products, num_primary = env.round(pulled_arms)
-    learner.update(pulled_arms, visited_products, num_bought_products, num_primary)
+    learner.updateHistory(pulled_arms, visited_products, num_bought_products, num_primary)
     if (i % 10 == 0) and (i != 0):
         learner.update_beta_distributions()
     print(pulled_arms)

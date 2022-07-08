@@ -2,6 +2,9 @@ import numpy as np
 from Pricing.Learner import *
 from Pricing.pricing_environment import EnvironmentPricing
 from Social_Influence.Graph import Graph
+from Pricing.Clairvoyant import Clairvoyant
+import Settings
+from matplotlib import pyplot as plt
 
 
 class Ucb(Learner):
@@ -59,6 +62,9 @@ class Ucb(Learner):
         for i in range(len(visited_products)):
             if (visited_products[i] == 1) and i != num_primary:
                 self.times_visited_from_starting_node[num_primary][arm_pulled[num_primary]][i] += 1
+        current_prices = [i[j] for i, j in zip(self.prices, arm_pulled)]
+        current_reward = sum(num_bought_products * current_prices)
+        self.current_reward.append(current_reward)
 
     def update(self, arm_pulled):
         """
@@ -70,6 +76,7 @@ class Ucb(Learner):
         """
 
         self.currentBestArms = arm_pulled
+        self.average_reward.append(np.mean(self.current_reward[-Settings.DAILY_INTERACTIONS:]))
         num_products = len(arm_pulled)
         '''update mean for every arm pulled for every product'''
         for prod in range(num_products):
@@ -100,6 +107,19 @@ graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)
 learner = Ucb(4, env.prices, env.secondaries)
 
+clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
+best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
+best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
+
+
+for i in range(Settings.NUM_OF_DAYS):
+    pulled_arms = learner.act()
+    print(pulled_arms)
+    for j in range(Settings.DAILY_INTERACTIONS):
+        visited_products, num_bought_products, num_primary = env.round(pulled_arms)
+        learner.updateHistory(pulled_arms, visited_products, num_bought_products,num_primary)
+    learner.update(pulled_arms)
+'''''''''
 for i in range(10000):
     pulled_arms = learner.act()
     visited_products, num_bought_products, num_primary = env.round(pulled_arms)
@@ -110,6 +130,26 @@ for i in range(10000):
     print(pulled_arms)
 print(learner.means)
 print(learner.widths)
-aaa = [i[j] for i,j in zip(learner.nearbyReward, learner.currentBestArms)]
-print(aaa)
-print(sum(aaa))
+#print(learner.)
+#aaa = [i[j] for i,j in zip(learner.nearbyReward, learner.currentBestArms)]
+#print(aaa)
+#print(sum(aaa))
+
+'''''''''
+
+print(learner.means)
+print(learner.widths)
+
+fig, ax = plt.subplots(nrows=1,ncols=2)
+ax[0].plot(learner.average_reward, color='blue', label='UCB-1')
+ax[0].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
+ax[0].set_title('Average reward')
+ax[1].plot(np.cumsum(learner.average_reward), color='blue', label='UCB-1')
+ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
+ax[1].set_title('Cumulative reward')
+ax[0].legend()
+ax[1].legend()
+plt.show()
+
+
+

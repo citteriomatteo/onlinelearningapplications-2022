@@ -69,7 +69,7 @@ for i in range(Settings.NUM_OF_DAYS):
         customer.set_as_new()
 
     context_generator.update_average_rewards(current_features=customer.features)
-    learner.update(pulled_arms)
+    learner.updateHistory(pulled_arms)
 
 context_learner.print_mean()
 fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 10))
