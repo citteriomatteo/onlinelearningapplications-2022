@@ -3,28 +3,32 @@ from Pricing.Learner import *
 from Pricing.pricing_environment import EnvironmentPricing
 from Settings import LAMBDA
 from Social_Influence.Graph import Graph
+from Pricing.Clairvoyant import Clairvoyant
+import Settings
+from matplotlib import pyplot as plt
 
 
 class TS(Learner):
 
-    def __init__(self, n_arms, prices, secondaries, graph):
+    def __init__(self, n_arms, prices, secondaries):
         super().__init__(n_arms, len(prices))
         self.prices = prices
         self.beta_parameters = np.ones((self.n_products, n_arms, 2))
-        self.graph = graph
+        self.num_product_sold_estimation = np.ones(prices.shape) * np.inf
+        self.nearbyReward = np.zeros(prices.shape)
+        self.secondaries = secondaries
+        self.currentBestArms = np.zeros(len(prices))
+        self.visit_probability_estimation = np.zeros((self.n_products, self.n_arms, self.n_products))
+        self.times_visited_from_starting_node = np.zeros((self.n_products, self.n_arms, self.n_products))
+        self.times_visited_as_first_node = np.zeros((self.n_products, self.n_arms, self.n_products))
+        self.times_bought_as_first_node = np.zeros((self.n_products, self.n_arms, self.n_products))
         self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
-        self.secondaries = secondaries
-        #self.num_product_sold_estimation = np.ones(prices.shape)
-        self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
-        self.times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
-        self.times_visited_as_first_node = np.zeros(self.n_products)
-        self.nearbyReward = np.zeros(prices.shape)
-        self.num_product_sold_estimation = np.ones(prices.shape) * np.inf
 
-    def pull_arm(self):
+
+
+    def act(self):
         """
-
         :return: for every product choose the arm to pull
         :rtype: list
         """
@@ -34,11 +38,6 @@ class TS(Learner):
             beta = np.random.beta(self.beta_parameters[prod, :, 0], self.beta_parameters[prod, :, 1])
             # arm of the current product with highest expected reward
             idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold_estimation[prod]) + self.nearbyReward[prod]))
-            # print("rewards prod %d: %s" % (prod, beta * self.prices[prod]))
-            # print("NEARBY REWARDS - old - %d: %s" % (prod, self.expected_nearby_reward(prod)[prod]))
-            # print("NEARBY REWARDS -check- %d: %s" % (prod, self.reward_of_node_without_nearby(prod)[prod]))
-            # print("NEARBY REWARDS - new - %d: %s" % (prod, self.expected_reward(prod)))
-        # print("arm pulled", idx)
         return idx
 
     def updateHistory(self, pulled_arm, visited_products, num_bought_products, num_primary):
@@ -51,6 +50,48 @@ class TS(Learner):
         :return: none
         :rtype: none
         """
+        super().update(pulled_arm, visited_products, num_bought_products)
+        self.times_visited_as_first_node[num_primary][pulled_arm[num_primary]] += 1
+        if num_bought_products[num_primary] > 0:
+            self.times_bought_as_first_node[num_primary][pulled_arm[num_primary]] += 1
+        for i in range(len(visited_products)):
+            if (visited_products[i] == 1) and i != num_primary:
+                self.times_visited_from_starting_node[num_primary][pulled_arm[num_primary]][i] += 1
+
+        #update of the batch related to the success
+        for prod in range(self.n_products):
+            if visited_products[prod] == 1:
+                if num_bought_products[prod] > 0:
+                    self.success_per_arm_batch[prod, pulled_arm[prod]] += 1
+                self.pulled_per_arm_batch[prod, pulled_arm[prod]] += 1
+
+        #saving rewards for thr graphical representation
+        current_prices = [i[j] for i, j in zip(self.prices, pulled_arm)]
+        current_reward = sum(num_bought_products * current_prices)
+        self.current_reward.append(current_reward)
+
+    def totalNearbyRewardEstimation(self):
+        """
+        :return: a matrix containing the nearby rewards for all products and all prices
+        """
+        # contains the conversion rate of the current best price for each product
+        conversion_of_current_best = [i[j] for i, j in zip(self.means, self.currentBestArms)]
+        price_of_current_best = np.array([i[j] for i, j in zip(self.prices, self.currentBestArms)])
+        num_product_sold_of_current_best = np.array(
+            [i[j] for i, j in zip(self.num_product_sold_estimation, self.currentBestArms)])
+        nearbyRewardsTable = np.zeros(self.prices.shape)
+        # it is created a list containing all the nodes/products that must be visited (initially all the products)
+        nodesToVisit = [i for i in range(len(self.prices))]
+        for node in nodesToVisit:
+            # for each product and each price calculates its nearby reward
+            for price in range(len(self.prices[0])):
+                nearbyRewardsTable[node][price] = sum(self.visit_probability_estimation[node][price]
+                                                      * conversion_of_current_best * price_of_current_best
+                                                      * num_product_sold_of_current_best * self.means[node][price])
+        return nearbyRewardsTable
+
+
+        '''''''''
         self.nearbyReward = [self.nearby_reward(node) for node in range(self.n_products)]
 
         super(TS, self).update(pulled_arm, visited_products, num_bought_products)
@@ -69,20 +110,35 @@ class TS(Learner):
         # prod]
         # self.beta_parameters[prod, pulled_arm[prod], 1] = self.beta_parameters[prod, pulled_arm[prod], 1] + 1.0 - \
         # reward[prod]
+        '''''
 
-    def update_beta_distributions(self):
-
+    def update(self,pulled_arm):
         self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + self.success_per_arm_batch[:, :]
         self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] \
                                         + self.pulled_per_arm_batch - self.success_per_arm_batch
-        for prod in range(self.n_products):
-            self.visit_probability_estimation[prod] = self.times_visited_from_starting_node[prod] / \
-                                                      self.times_visited_as_first_node[prod]
-            for price in range(self.n_arms):
-                self.num_product_sold_estimation[prod][price] = np.mean(self.boughts_per_arm[prod][price])
+        num_products = len(pulled_arm)
+        for prod in range(num_products):
+            if len(self.boughts_per_arm[prod][pulled_arm[prod]])!=0:
+                self.num_product_sold_estimation[prod][pulled_arm[prod]] = np.mean(self.boughts_per_arm[prod][pulled_arm[prod]])
+                if (self.num_product_sold_estimation[prod][pulled_arm[prod]] == 0):
+                    self.num_product_sold_estimation[prod][pulled_arm[prod]] = np.inf
+            for t1 in range(self.n_arms):
+                for t2 in range(num_products):
+                    if self.times_bought_as_first_node[prod][t1][t2] > 0:
+                        self.visit_probability_estimation[prod][t1][t2] = self.times_visited_from_starting_node[prod][t1][t2] / self.times_bought_as_first_node[prod][t1][t2]
+                    else:
+                        self.visit_probability_estimation[prod][t1][t2] = 0
+        self.visit_probability_estimation[np.isnan(self.visit_probability_estimation)] = 0
+
 
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
+
+        self.nearbyReward = self.totalNearbyRewardEstimation()
+        self.nearbyReward[np.isnan(self.nearbyReward)] = 0
+
+
+'''''''''
 
     def nearby_reward(self, actual_node):
         node_to_visit = [i for i in range(self.n_products)]
@@ -150,18 +206,36 @@ class TS(Learner):
             probability_to_observe = LAMBDA
 
         return np.mean(expected_reward_actual_node)
+'''''
 
 
 graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)
-learner = TS(4, env.prices, env.secondaries, graph)
+learner = TS(4, env.prices, env.secondaries)
 
-for i in range(10000):
-    if i == 50:
-        aaa = 1
-    pulled_arms = learner.pull_arm()
-    visited_products, num_bought_products, num_primary = env.round(pulled_arms)
-    learner.updateHistory(pulled_arms, visited_products, num_bought_products, num_primary)
-    if (i % 10 == 0) and (i != 0):
-        learner.update_beta_distributions()
+clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
+best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
+best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
+
+
+for i in range(Settings.NUM_OF_DAYS):
+    pulled_arms = learner.act()
     print(pulled_arms)
+    for j in range(Settings.DAILY_INTERACTIONS):
+        visited_products, num_bought_products, num_primary = env.round(pulled_arms)
+        learner.updateHistory(pulled_arms, visited_products, num_bought_products,num_primary)
+    learner.update(pulled_arms)
+
+print(learner.num_product_sold_estimation)
+
+fig, ax = plt.subplots(nrows=1,ncols=2)
+ax[0].plot(learner.average_reward, color='blue', label='UCB-5')
+ax[0].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
+ax[0].set_title('Average reward')
+ax[1].plot(np.cumsum(learner.average_reward), color='blue', label='UCB-5')
+ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
+ax[1].set_title('Cumulative reward')
+ax[0].legend()
+ax[1].legend()
+plt.show()
+

@@ -119,23 +119,7 @@ for i in range(Settings.NUM_OF_DAYS):
         visited_products, num_bought_products, num_primary = env.round(pulled_arms)
         learner.updateHistory(pulled_arms, visited_products, num_bought_products,num_primary)
     learner.update(pulled_arms)
-'''''''''
-for i in range(10000):
-    pulled_arms = learner.act()
-    visited_products, num_bought_products, num_primary = env.round(pulled_arms)
-    learner.updateHistory(pulled_arms, visited_products, num_bought_products, num_primary)
-    # TODO  non hardcodare
-    if (i % 10 == 0) and (i != 0):
-        learner.update(pulled_arms)
-    print(pulled_arms)
-print(learner.means)
-print(learner.widths)
-#print(learner.)
-#aaa = [i[j] for i,j in zip(learner.nearbyReward, learner.currentBestArms)]
-#print(aaa)
-#print(sum(aaa))
 
-'''''''''
 
 print(learner.means)
 print(learner.widths)

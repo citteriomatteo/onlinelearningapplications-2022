@@ -37,11 +37,8 @@ class TS(Learner):
             idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold[prod]) + self.nearbyReward[prod]))
         return idx
 
-    # TODO non viene mai usata
-    def updateHistory(self, arm_pulled, visited_products, num_bought_products):
-        super().update(arm_pulled, visited_products, num_bought_products)
 
-    def update(self, pulled_arm, visited_products, num_bought_products):
+    def updateHistory(self, pulled_arm, visited_products, num_bought_products):
         """
         update alpha and beta parameters
         :param pulled_arm: arm pulled for every product
@@ -53,7 +50,7 @@ class TS(Learner):
         :return: none
         :rtype: none
         """
-        super(TS, self).update(pulled_arm, visited_products, num_bought_products)
+        super().update(pulled_arm, visited_products, num_bought_products)
         for prod in range(self.n_products):
             if visited_products[prod] == 1:
                 if num_bought_products[prod] > 0:
@@ -153,7 +150,7 @@ class TS(Learner):
             t += 1
         return visited_products
 
-    def update_beta_distributions(self, pulled_arm):
+    def update(self, pulled_arm):
 
         self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + \
                                         self.success_per_arm_batch[:, :]
@@ -195,8 +192,8 @@ for i in range(Settings.NUM_OF_DAYS):
     print(pulled_arms)
     for j in range(Settings.DAILY_INTERACTIONS):
         visited_products, num_bought_products, a = env.round(pulled_arms)
-        learner.update(pulled_arms, visited_products, num_bought_products)
-    learner.update_beta_distributions(pulled_arms)
+        learner.updateHistory(pulled_arms, visited_products, num_bought_products)
+    learner.update(pulled_arms)
 
 fig, ax = plt.subplots(nrows=1,ncols=2)
 ax[0].plot(learner.average_reward, color='green', label='TS')

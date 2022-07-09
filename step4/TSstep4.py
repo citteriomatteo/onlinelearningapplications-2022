@@ -155,12 +155,10 @@ class TS(Learner):
         self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] \
                                         + self.pulled_per_arm_batch - self.success_per_arm_batch
         for prod in range(self.n_products):
-            for price in range(self.n_arms):
-                if(self.boughts_per_arm[prod][price]!=0):
-                    self.num_product_sold_estimation[prod][price] = np.mean(self.boughts_per_arm[prod][price])
-                    if(self.num_product_sold_estimation[prod][price]==0):
-                        self.num_product_sold_estimation[prod][price] = np.inf
-
+            if len(self.boughts_per_arm[prod][pulled_arm[prod]])!=0:
+                self.num_product_sold_estimation[prod][pulled_arm[prod]] = np.mean(self.boughts_per_arm[prod][pulled_arm[prod]])
+                if (self.num_product_sold_estimation[prod][pulled_arm[prod]] == 0):
+                    self.num_product_sold_estimation[prod][pulled_arm[prod]] = np.inf
 
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
@@ -203,6 +201,8 @@ for i in range(Settings.NUM_OF_DAYS):
         learner.updateHistory(pulled_arms, visited_products, num_bought_products)
     learner.update(pulled_arms)
 
+print(learner.num_product_sold_estimation)
+
 fig, ax = plt.subplots(nrows=1,ncols=2)
 ax[0].plot(learner.average_reward, color='green', label='TS')
 ax[0].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
@@ -213,3 +213,4 @@ ax[1].set_title('Cumulative reward')
 ax[0].legend()
 ax[1].legend()
 plt.show()
+
