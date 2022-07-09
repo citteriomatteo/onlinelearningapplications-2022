@@ -75,7 +75,14 @@ class TS(Learner):
         :return: a matrix containing the nearby rewards for all products and all prices
         """
         # contains the conversion rate of the current best price for each product
-        conversion_of_current_best = [i[j] for i, j in zip(self.means, self.currentBestArms)]
+        conversion_of_current_best = np.zeros(self.n_products)
+        print(self.currentBestArms)
+        conversion_of_current_best_alpha = [i[j][0] for i, j in zip(self.beta_parameters, self.currentBestArms)]
+        conversion_of_current_best_beta = [i[j][1] for i, j in zip(self.beta_parameters, self.currentBestArms)]
+
+        for prod in range(self.n_products):
+            conversion_of_current_best[prod] = conversion_of_current_best_alpha[prod]/(conversion_of_current_best_beta[prod]+conversion_of_current_best_alpha[prod])
+
         price_of_current_best = np.array([i[j] for i, j in zip(self.prices, self.currentBestArms)])
         num_product_sold_of_current_best = np.array(
             [i[j] for i, j in zip(self.num_product_sold_estimation, self.currentBestArms)])
@@ -85,9 +92,11 @@ class TS(Learner):
         for node in nodesToVisit:
             # for each product and each price calculates its nearby reward
             for price in range(len(self.prices[0])):
+                alpha_near= self.beta_parameters[node][price][0]
+                beat_near = self.beta_parameters[node][price][1]
                 nearbyRewardsTable[node][price] = sum(self.visit_probability_estimation[node][price]
                                                       * conversion_of_current_best * price_of_current_best
-                                                      * num_product_sold_of_current_best * self.means[node][price])
+                                                      * num_product_sold_of_current_best * (alpha_near/(alpha_near+beat_near)))
         return nearbyRewardsTable
 
 
@@ -113,6 +122,10 @@ class TS(Learner):
         '''''
 
     def update(self,pulled_arm):
+
+        self.currentBestArms = pulled_arm
+        self.average_reward.append(np.mean(self.current_reward[-Settings.DAILY_INTERACTIONS:]))
+
         self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + self.success_per_arm_batch[:, :]
         self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] \
                                         + self.pulled_per_arm_batch - self.success_per_arm_batch
