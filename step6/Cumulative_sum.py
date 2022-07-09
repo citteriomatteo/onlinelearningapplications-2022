@@ -31,6 +31,7 @@ class CUSUM:
         self.t = 0
         self.reference = 0
 
+'''''''''
 p0 = 0.6
 p1 = 0.2
 
@@ -59,3 +60,4 @@ plt.figure(0)
 plt.hist(S, bins=20)
 plt.figure(1)
 plt.show()
+'''''
