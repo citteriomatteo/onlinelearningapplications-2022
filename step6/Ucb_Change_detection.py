@@ -10,7 +10,7 @@ from Cumulative_sum import CUSUM
 
 
 class Ucb_Change_detection(Learner):
-    def __init__(self,n_arms, prices, secondaries, M=100,eps=0.05,h=20, alpha=0.01):
+    def __init__(self,n_arms, prices, secondaries, M=100,eps=0.05,h=15, alpha=0.01):
         super().__init__(n_arms, len(prices))
         self.prices = prices
         self.means = np.zeros(prices.shape)
@@ -26,7 +26,7 @@ class Ucb_Change_detection(Learner):
         self.n = np.zeros((self.n_products, self.n_arms))
 
         self.change_detection = [[CUSUM(M,eps,h) for i in range(n_arms)] for j in range(self.n_products)] #deve essere nella stessa dimensione di self.prices
-        self.valid_reward_per_arms=[[[] for i in range(n_arms)] for j in range(self.n_products)]
+        self.valid_reward_per_arms=[[[0] for i in range(n_arms)] for j in range(self.n_products)]
         self.detections = [[[] for i in range(n_arms)] for j in range(self.n_products)] #stesso
         self.alpha = alpha
 
@@ -56,8 +56,8 @@ class Ucb_Change_detection(Learner):
         num_products = len(arm_pulled)
         '''update mean for every arm pulled for every product'''
         for prod in range(num_products):
-            if len(self.rewards_per_arm[prod][arm_pulled[prod]]) > 0:
-                self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
+            if len(self.valid_reward_per_arms[prod][arm_pulled[prod]]) > 0:
+                self.means[prod][arm_pulled[prod]] = np.mean(self.valid_reward_per_arms[prod][arm_pulled[prod]])
             if len(self.boughts_per_arm[prod][arm_pulled[prod]]) > 0:
                 self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(
                     self.boughts_per_arm[prod][arm_pulled[prod]])
@@ -81,7 +81,7 @@ class Ucb_Change_detection(Learner):
             for arm in range(self.n_arms):
                 self.n[prod, arm] = len(self.rewards_per_arm[prod][arm])
                 if self.n[prod, arm] > 0:
-                    self.widths[prod][arm] = np.sqrt((2 * np.max(total_valid_samples) / self.n[prod, arm]))
+                    self.widths[prod][arm] = np.sqrt((2 * np.log(total_valid_samples)) / self.n[prod, arm])
                 else:
                     self.widths[prod][arm] = np.inf
         self.nearbyReward = self.totalNearbyRewardEstimation()
@@ -90,6 +90,15 @@ class Ucb_Change_detection(Learner):
 
     def updateHistory(self, arm_pulled, visited_products, num_bought_products, num_primary):
 
+        for prod in range(self.n_products):
+            if visited_products[prod] == 1:
+                if num_bought_products[prod] == 0:
+                    self.valid_reward_per_arms[prod][arm_pulled[prod]].append(0)
+                else:
+                    self.valid_reward_per_arms[prod][arm_pulled[prod]].append(1)
+
+
+        super().update(arm_pulled, visited_products, num_bought_products)
 
         #controllo se l'arm è stato tirato e aggiorno la quantità nel cumulative sum (io controllo solo il conversion rate)
         for prod in range(self.n_products):
@@ -99,12 +108,11 @@ class Ucb_Change_detection(Learner):
                 else:
                     quantity=0
                 if self.change_detection[prod][arm_pulled[prod]].update(quantity):
-                    print("Prod: "+str(prod) +"Arm: " +str(arm_pulled[prod])+"changet at time t: " + str(self.t))
+                    print("Prod: "+str(prod) +"Arm: " + str(arm_pulled[prod])+"changet at time t: " + str(self.t))
                     self.detections[prod][arm_pulled[prod]].append(self.t)
                     self.valid_reward_per_arms[prod][arm_pulled[prod]] = []
                     self.change_detection[prod][arm_pulled[prod]].reset()
 
-        super().update(arm_pulled, visited_products, num_bought_products)
         self.times_visited_as_first_node[num_primary][arm_pulled[num_primary]] += 1
         if num_bought_products[num_primary] > 0:
             self.times_bought_as_first_node[num_primary][arm_pulled[num_primary]] += 1
@@ -197,8 +205,8 @@ for i in range(Settings.NUM_OF_DAYS):
         visited_products, num_bought_products, num_primary = env.round(pulled_arms)
         learner.updateHistory(pulled_arms, visited_products, num_bought_products,num_primary)
     learner.update(pulled_arms)
-    if(i==Settings.NUM_OF_DAYS - 600):
-        print("Cambio conv rates")
+    if(i==500):
+        print("Cambio conv rates"+str(i))
         env.setNewConvRates(new_conv_rates)
 
 
