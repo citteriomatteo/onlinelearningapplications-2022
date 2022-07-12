@@ -167,6 +167,36 @@ clearvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.sec
 best_revenue = clearvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
 best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
+
+cumulative_regret = []
+R=[]
+
+for i in range(Settings.NUM_OF_DAYS):
+    instant_regret = []
+    pulled_arms = learner.act()
+    print(pulled_arms)
+    for j in range(Settings.DAILY_INTERACTIONS):
+        visited_products, num_bought_products, a = env.round(pulled_arms)
+        learner.updateHistory(pulled_arms, visited_products, num_bought_products)
+        instant_regret.append(best_revenue - learner.current_reward[-1])
+        #print(instant_regret)
+    learner.update(pulled_arms)
+    cumulative_regret = np.cumsum(instant_regret)
+    R.append(cumulative_regret)
+    #print(R)
+
+
+R = np.array(R)
+mean_R = np.mean(R,axis=0)
+stdev= np.std(R, axis=0)/np.sqrt(Settings.NUM_OF_DAYS)
+
+
+plt.plot(mean_R)
+plt.fill_between(range(len(mean_R)), mean_R - stdev,mean_R +stdev, alpha=0.4)
+plt.show()
+
+
+'''
 for i in range(Settings.NUM_OF_DAYS):
     pulled_arms = learner.act()
     print(pulled_arms)
@@ -174,6 +204,7 @@ for i in range(Settings.NUM_OF_DAYS):
         visited_products, num_bought_products, a = env.round(pulled_arms)
         learner.updateHistory(pulled_arms, visited_products, num_bought_products)
     learner.update(pulled_arms)
+
 
 print(learner.means)
 print(learner.widths)
@@ -189,3 +220,5 @@ ax[0].legend()
 ax[1].legend()
 plt.show()
 
+
+'''
