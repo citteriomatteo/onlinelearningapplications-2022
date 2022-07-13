@@ -38,6 +38,7 @@ class Learner:
         :return: update the observation list
         :rtype: None
         """
+        #print('#####################################################################à')
         self.t += 1
         # self.rewards.append(reward)
         num_product = len(pulled_arms)
