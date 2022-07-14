@@ -60,6 +60,7 @@ class Greedy_Learner(Learner):
 
         # index of the best product arm to increase
         price_index_increased = revenues.index(max(revenues))
+
         return_arms = self.max_idxs[classChoice].copy()
         return_arms[price_index_increased] += 1
         return return_arms, revenues[price_index_increased], classChoice
@@ -207,6 +208,7 @@ class Greedy_Learner(Learner):
             if new_revenue > self.max_revenue[chosen_class]:
                 self.max_revenue[chosen_class] = new_revenue
                 self.max_idxs[chosen_class] = new_arms
+                #self.current_reward.append(new_revenue)
             else:
                 local_max_found[chosen_class] = True
                 # when a local minimum for a certain class is found, we make sure this class will

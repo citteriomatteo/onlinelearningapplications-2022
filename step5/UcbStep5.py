@@ -111,9 +111,9 @@ for k in range (Settings.NUM_PLOT_ITERATION):
     graph = Graph(mode="full", weights=True)
     env = EnvironmentPricing(4, graph, 1)
     learner = Ucb(4, env.prices, env.secondaries)
-    clearvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold,
+    clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold,
                               graph, env.alpha_ratios)
-    best_revenue = clearvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
+    best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
     opt_rew = []
     actual_rew = []
     for i in range(Settings.NUM_OF_DAYS):
