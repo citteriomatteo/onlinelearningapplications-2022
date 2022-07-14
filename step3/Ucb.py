@@ -45,10 +45,6 @@ class Ucb(Learner):
         prices = [i[j] for i, j in zip(self.prices, arms)]
         num_product_sold = [i[j] for i, j in zip(self.num_product_sold, arms)]
         nearby_reward = [i[j] for i, j in zip(self.nearbyReward, arms)]
-        aaa = np.multiply(prices, num_product_sold)
-        bbb = aaa + nearby_reward
-        ccc = np.multiply(bbb,means)
-        ddd = np.multiply(ccc, self.alpha_ratios)
         return np.sum(np.multiply(self.alpha_ratios, np.multiply(means, np.multiply(prices, num_product_sold))+nearby_reward))
 
     def updateHistory(self, arm_pulled, visited_products, num_bought_products):
@@ -88,12 +84,12 @@ class Ucb(Learner):
     def simulateTotalNearby(self, selected_price):
         times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
         for prod in range(self.n_products):
-            for iteration in range(364):
+            for iteration in range(Settings.NUM_MC_SIMULATIONS):
                 visited_products_ = self.simulateSingleNearby(selected_price, prod)
                 for j in range(len(visited_products_)):
                     if (visited_products_[j] == 1) and j != prod:
                         times_visited_from_starting_node[prod][j] += 1
-        return times_visited_from_starting_node / 364
+        return times_visited_from_starting_node / Settings.NUM_MC_SIMULATIONS
 
     def simulateSingleNearby(self, selected_prices, starting_node):
         customer = Customer(reservation_price=100, num_products=len(self.graph.nodes), graph=self.graph)
@@ -195,10 +191,9 @@ for k in range (Settings.NUM_PLOT_ITERATION):
             learner.updateHistory(pulled_arms, visited_products, num_bought_products)
 
         learner.update(pulled_arms)
-        actual_rew.append(learner.revenue_given_arms(pulled_arms))
+        actual_rew.append(learner.revenue_given_arms(arms=pulled_arms))
         opt_rew.append(best_revenue)
 
-    a = learner.revenue_given_arms(pulled_arms)
     final_cumulative_regret[k, :] = np.cumsum(opt_rew) - np.cumsum(actual_rew)
     final_cumulative_reward[k,:] = np.cumsum(actual_rew)
     final_reward[k:] = actual_rew

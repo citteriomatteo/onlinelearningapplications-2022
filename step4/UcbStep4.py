@@ -23,6 +23,8 @@ class Ucb(Learner):
         self.secondaries = secondaries
         self.currentBestArms = np.zeros(len(prices))
         self.n = np.zeros((self.n_products, self.n_arms))
+        self.alpha_ratios = np.zeros(self.n_products)
+        self.times_visited_as_first_node = np.zeros(self.n_products)
 
     def reset(self):
         self.__init__(self.n_arms, self.prices, self.graph)
@@ -37,15 +39,22 @@ class Ucb(Learner):
         idx = np.argmax((self.widths + self.means) * ((self.prices*self.num_product_sold_estimation) + self.nearbyReward), axis=1)
         return idx
 
+    def revenue_given_arms(self, arms):
+        means = [i[j] for i, j in zip(self.means, arms)]
+        prices = [i[j] for i, j in zip(self.prices, arms)]
+        num_product_sold = [i[j] for i, j in zip(self.num_product_sold_estimation, arms)]
+        nearby_reward = [i[j] for i, j in zip(self.nearbyReward, arms)]
+        return np.sum(np.multiply(self.alpha_ratios, np.multiply(means, np.multiply(prices, num_product_sold))+nearby_reward))
+
     def simulateTotalNearby(self, selected_price):
         times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
         for prod in range(self.n_products):
-            for iteration in range(364):
+            for iteration in range(Settings.NUM_MC_SIMULATIONS):
                 visited_products_ = self.simulateSingleNearby(selected_price, prod)
                 for j in range(len(visited_products_)):
                     if (visited_products_[j] == 1) and j != prod:
                         times_visited_from_starting_node[prod][j] += 1
-        return times_visited_from_starting_node / 1000
+        return times_visited_from_starting_node / Settings.NUM_MC_SIMULATIONS
 
     def simulateSingleNearby(self, selected_prices, starting_node):
         customer = Customer(reservation_price=100, num_products=len(self.graph.nodes), graph=self.graph)
@@ -124,8 +133,9 @@ class Ucb(Learner):
             t += 1
         return visited_products
 
-    def updateHistory(self, arm_pulled, visited_products, num_bought_products):
+    def updateHistory(self, arm_pulled, visited_products, num_bought_products, num_primary):
         super().update(arm_pulled, visited_products, num_bought_products)
+        self.times_visited_as_first_node[num_primary] += 1
         current_prices = [i[j] for i, j in zip(self.prices, arm_pulled)]
         current_reward = sum(num_bought_products * current_prices)
         self.current_reward.append(current_reward)
@@ -143,6 +153,7 @@ class Ucb(Learner):
         for prod in range(self.n_products):
             self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
             self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(self.boughts_per_arm[prod][arm_pulled[prod]])
+            self.alpha_ratios[prod] = self.times_visited_as_first_node[prod] / np.sum(self.times_visited_as_first_node)
         for prod in range(self.n_products):
             for arm in range(self.n_arms):
                 self.n[prod,arm] = len(self.rewards_per_arm[prod][arm])
@@ -157,9 +168,7 @@ class Ucb(Learner):
         for prod in range(self.n_products):
             for price in range(self.n_arms):
                 for temp in range(self.n_products):
-                    self.nearbyReward[prod][price] += self.means[prod][price] * self.visit_probability_estimation[prod][
-                        temp] * self.means[temp][self.currentBestArms[temp]] * self.num_product_sold_estimation[temp][
-                                                          self.currentBestArms[temp]]*self.prices[temp][self.currentBestArms[temp]]
+                    self.nearbyReward[prod][price] += self.means[prod][price]*self.visit_probability_estimation[prod][temp]*self.means[temp][self.currentBestArms[temp]]*self.num_product_sold_estimation[temp][self.currentBestArms[temp]]*self.prices[temp][self.currentBestArms[temp]]
 
 final_reward= np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
 final_cumulative_regret = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
@@ -178,13 +187,14 @@ for k in range (Settings.NUM_PLOT_ITERATION):
         pulled_arms = learner.act()
         print(pulled_arms)
         for j in range(Settings.DAILY_INTERACTIONS):
-            visited_products, num_bought_products, a = env.round(pulled_arms)
-            learner.updateHistory(pulled_arms, visited_products, num_bought_products)
+            visited_products, num_bought_products, num_primary = env.round(pulled_arms)
+            learner.updateHistory(pulled_arms, visited_products, num_bought_products, num_primary)
 
         learner.update(pulled_arms)
-        actual_rew.append(learner.average_reward[-1])
+        actual_rew.append(learner.revenue_given_arms(pulled_arms))
         opt_rew.append(best_revenue)
 
+    a = learner.revenue_given_arms(pulled_arms)
     final_cumulative_regret[k, :] = np.cumsum(opt_rew) - np.cumsum(actual_rew)
     final_cumulative_reward[k,:] = np.cumsum(actual_rew)
     final_reward[k:] = actual_rew
