@@ -159,15 +159,8 @@ class Ucb(Learner):
             # action.compute_for_social_influence(graph=self.graph)
             t += 1
         return visited_products
-'''''''''
-graph = Graph(mode="full", weights=True)
-env = EnvironmentPricing(4, graph, 1)
-learner = Ucb(4, env.prices, env.secondaries, env.num_product_sold[0], graph)
-clearvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
-best_revenue = clearvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
-print("Best rew: ", best_revenue)
-best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
-'''''
+
+
 
 final_reward= np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
 final_cumulative_regret = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
@@ -231,7 +224,7 @@ print(mean_final_reward)
 best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
 
-fig, ax = plt.subplots(nrows=3,ncols=1)
+fig, ax = plt.subplots(nrows=1,ncols=3)
 ax[0].plot(mean_cumulative_regret, color='blue', label='UCB-1')
 ax[0].fill_between(range(Settings.NUM_OF_DAYS), mean_cumulative_regret - stdev_regret,mean_cumulative_regret + stdev_regret, alpha=0.4)
 ax[0].set_title('Cumulative Regret')
