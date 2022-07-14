@@ -31,9 +31,10 @@ class Greedy_Learner(Learner):
         self.alpha_ratios = alpha_ratios
         super().__init__(self.n_arms, self.n_products)
 
-        # for each class save the list of arm to pull for each product (3x5)
+
+        #for each class save the list of arm to pull for each product (3x5)
         self.max_idxs = [[0 for i in range(self.n_products)] for _ in range(len(classes))]
-        # for each class (3 types of classes) save the max_revenue (3x1)
+        #for each class (3 types of classes) save the max_revenue (3x1)
         self.max_revenue = [self.revenue_given_arms(self.max_idxs[i], i) for i in range(len(classes))]
 
         self.classes_probability = []
@@ -60,6 +61,7 @@ class Greedy_Learner(Learner):
 
         # index of the best product arm to increase
         price_index_increased = revenues.index(max(revenues))
+
         return_arms = self.max_idxs[classChoice].copy()
         return_arms[price_index_increased] += 1
         return return_arms, revenues[price_index_increased], classChoice
@@ -219,6 +221,7 @@ env = EnvironmentPricing(4, graph_sample, 1)
 learner = Greedy_Learner(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold,
                          graph_sample, env.alpha_ratios)
 learner.update()
+#print(learner.current_reward)
 print('\nFINAL')
 print('Greedy algorithm chosen arms: ',learner.max_idxs)
 print('Clearvoyant best arms: [[0, 1, 2, 2, 3], [0, 2, 1, 0, 2], [1, 3, 1, 1, 1]]')
