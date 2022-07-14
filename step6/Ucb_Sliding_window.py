@@ -141,15 +141,22 @@ new_conv_rates=[
       [0.4, 0.95, 0.35, 0.3]]
   ]
 
+
 clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
 best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
-# best_revenue_after_change = clairvoyant.revenue_given_arms([0, 2, 1, 0, 2], 0)
-best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
+print(best_revenue)
+
+clairvoyant_after_change = Clairvoyant(env.prices, new_conv_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
+best_revenue_after_change = clairvoyant_after_change.revenue_given_arms([0, 2, 1, 0, 2], 0)
+print(best_revenue_after_change)
+
+best_revenue_array = [best_revenue for i in range(500)] + [best_revenue_after_change for i in range(500)]
+
 
 
 for i in range(Settings.NUM_OF_DAYS):
     pulled_arms = learner.act()
-    print(pulled_arms)
+    if i%100==0: print(pulled_arms)
     for j in range(Settings.DAILY_INTERACTIONS):
         visited_products, num_bought_products, num_primary = env.round(pulled_arms)
         learner.updateHistory(pulled_arms, visited_products, num_bought_products,num_primary, i)
@@ -163,14 +170,19 @@ for i in range(Settings.NUM_OF_DAYS):
 #print(learner.widths)
 
 
-fig, ax = plt.subplots(nrows=1,ncols=2)
+fig, ax = plt.subplots(nrows=2,ncols=1, figsize=(12,8))
 ax[0].plot(learner.average_reward, color='blue', label='UCB Sliding Window')
-ax[0].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
-# ax[0].axhline(y=best_revenue_after_change, color='green', linestyle='--', label='Clairvoyant after abrupt change')
+ax[0].axhline(y=best_revenue, xmin=0., xmax=0.5, color='red', linestyle='--', label='Clairvoyant')
+ax[0].axhline(y=best_revenue_after_change, xmin=0.5, xmax=1., color='green', linestyle='--', label='Clairvoyant after abrupt change')
 ax[0].set_title('Average reward')
+ax[0].axvline(x=500+Settings.WINDOW_SIZE)
+ax[0].axvline(x=500)
 ax[1].plot(np.cumsum(learner.average_reward), color='blue', label='UCB Sliding Window')
-ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
+ax[1].plot(np.cumsum(best_revenue_array)[:500], color='red', linestyle='--', label='Clairvoyant')
+x = [i for i in range(501,1000)]
+ax[1].plot(x, np.cumsum(best_revenue_array)[501:], color='green', linestyle='--', label='Clairvoyant after abrupt change')
 ax[1].set_title('Cumulative reward')
+ax[1].axvline(x=500)
 ax[0].legend()
 ax[1].legend()
 plt.show()
