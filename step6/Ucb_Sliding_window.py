@@ -39,9 +39,12 @@ class UCB_Sliding_Window(Learner):
         :rtype: int
         """
         idx = np.argmax((self.widths + self.means) * ((self.prices * self.num_product_sold_estimation) + self.nearbyReward), axis=1)
+        for i in range(len(idx)):
+            for j in range(4):
+                if self.n[i, j] == 0: idx[i] = j
         return idx
 
-    def updateHistory(self, arm_pulled, visited_products, num_bought_products, num_primary, day):
+    def updateHistory(self, arm_pulled, visited_products, num_bought_products, num_primary):
         super().update(arm_pulled, visited_products, num_bought_products)
         self.times_visited_as_first_node[num_primary][arm_pulled[num_primary]] += 1
         if num_bought_products[num_primary] > 0:
@@ -70,29 +73,24 @@ class UCB_Sliding_Window(Learner):
             if len(self.rewards_per_arm[prod][arm_pulled[prod]]) > 0:
                 self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]][-Settings.WINDOW_SIZE:])
             if len(self.boughts_per_arm[prod][arm_pulled[prod]]) > 0:
-                self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(
-                    self.boughts_per_arm[prod][arm_pulled[prod]])
+                self.num_product_sold_estimation[prod][arm_pulled[prod]] = np.mean(self.boughts_per_arm[prod][arm_pulled[prod]])
             for t1 in range(self.n_arms):
                 for t2 in range(num_products):
                     if self.times_bought_as_first_node[prod][t1][t2] > 0:
-                        self.visit_probability_estimation[prod][t1][t2] = \
-                        self.times_visited_from_starting_node[prod][t1][t2] / self.times_bought_as_first_node[prod][t1][
-                            t2]
+                        self.visit_probability_estimation[prod][t1][t2] = self.times_visited_from_starting_node[prod][t1][t2] / self.times_bought_as_first_node[prod][t1][t2]
                     else:
                         self.visit_probability_estimation[prod][t1][t2] = 0
         self.visit_probability_estimation[np.isnan(self.visit_probability_estimation)] = 0
         '''update widths for every arm pulled for every product'''
         for prod in range(num_products):
             for arm in range(self.n_arms):
-                self.n[prod, arm] = len(self.rewards_per_arm[prod][arm])
+                self.n[prod, arm] = len(self.rewards_per_arm[prod][arm][-Settings.WINDOW_SIZE:])
                 if self.n[prod, arm] > 0:
                     self.widths[prod][arm] = np.sqrt((2 * np.max(np.log(self.t)) / self.n[prod, arm]))
                 else:
                     self.widths[prod][arm] = np.inf
         self.nearbyReward = self.totalNearbyRewardEstimation()
         self.nearbyReward[np.isnan(self.nearbyReward)] = 0
-
-
 
     def totalNearbyRewardEstimation(self):
         """
@@ -112,7 +110,6 @@ class UCB_Sliding_Window(Learner):
                                                       * conversion_of_current_best * price_of_current_best
                                                       * num_product_sold_of_current_best * self.means[node][price])
         return nearbyRewardsTable
-
 
 
 graph = Graph(mode="full", weights=True)
@@ -153,21 +150,16 @@ print(best_revenue_after_change)
 best_revenue_array = [best_revenue for i in range(500)] + [best_revenue_after_change for i in range(500)]
 
 
-
 for i in range(Settings.NUM_OF_DAYS):
     pulled_arms = learner.act()
     if i%100==0: print(pulled_arms)
     for j in range(Settings.DAILY_INTERACTIONS):
         visited_products, num_bought_products, num_primary = env.round(pulled_arms)
-        learner.updateHistory(pulled_arms, visited_products, num_bought_products,num_primary, i)
+        learner.updateHistory(pulled_arms, visited_products, num_bought_products,num_primary)
     learner.update(pulled_arms)
     if(i==500):
         print("Cambio conv rates"+str(i))
         env.setNewConvRates(new_conv_rates)
-
-
-#print(learner.means)
-#print(learner.widths)
 
 
 fig, ax = plt.subplots(nrows=2,ncols=1, figsize=(12,8))
