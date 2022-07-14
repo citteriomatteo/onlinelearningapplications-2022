@@ -167,9 +167,7 @@ class Ucb_Change_detection(Learner):
         return nearbyRewardsTable
 
 
-graph = Graph(mode="full", weights=True)
-env = Non_stationary_environment(4, graph, 1)
-learner = Ucb_Change_detection(4, env.prices, env.secondaries)
+
 
 new_conv_rates=[
     [
@@ -192,11 +190,113 @@ new_conv_rates=[
       [0.4, 0.95, 0.35, 0.3]]
   ]
 
-clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
-best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
+
+
+final_reward= np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
+final_cumulative_regret = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
+final_cumulative_reward = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
+
+
+
+for k in range (Settings.NUM_PLOT_ITERATION):
+    graph = Graph(mode="full", weights=True)
+    env = Non_stationary_environment(4, graph, 1)
+    clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold,
+                              graph, env.alpha_ratios)
+    best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
+    clairvoyant_shif = Clairvoyant(env.prices, new_conv_rates, env.classes, env.secondaries, env.num_product_sold,
+                              graph, env.alpha_ratios)
+    best_new_revenue = clairvoyant.revenue_given_arms([0, 2, 1, 0, 2], 0)
+    learner = Ucb_Change_detection(4, env.prices, env.secondaries)
+    opt_rew = []
+    actual_rew = []
+    best_rew = best_revenue
+    for i in range(Settings.NUM_OF_DAYS):
+        if(i==200):
+            env.setNewConvRates(new_conv_rates)
+            print("CAMBIO")
+            best_rew=best_new_revenue
+        pulled_arms = learner.act()
+        print(pulled_arms)
+
+        for j in range(Settings.DAILY_INTERACTIONS):
+            visited_products, num_bought_products, num_primary = env.round(pulled_arms)
+            learner.updateHistory(pulled_arms, visited_products, num_bought_products, num_primary)
+
+        learner.update(pulled_arms)
+        actual_rew.append(learner.average_reward[-1])
+        opt_rew.append(best_new_revenue)
+
+    final_cumulative_regret[k, :] = np.cumsum(opt_rew) - np.cumsum(actual_rew)
+    final_cumulative_reward[k,:] = np.cumsum(actual_rew)
+    final_reward[k:] = actual_rew
+
+
+#REGRET
+print("FINAL CUM REGRET: ")
+print(final_cumulative_regret)
+
+mean_cumulative_regret = np.mean(final_cumulative_regret, axis=0)
+stdev_regret= np.std(final_cumulative_regret, axis=0) / np.sqrt(Settings.NUM_OF_DAYS)
+print("MEAN: ")
+print(mean_cumulative_regret)
+
+
+#Cumulative REWARD
+print("FINAL CUM REWARD: ")
+print(final_cumulative_reward)
+
+mean_cumulative_reward = np.mean(final_cumulative_reward, axis=0)
+stdev_cumulative_reward= np.std(final_cumulative_reward, axis=0) / np.sqrt(Settings.NUM_OF_DAYS)
+print("MEAN: ")
+print(mean_cumulative_reward)
+
+#AREWARD
+print("FINAL REWARD: ")
+print(final_reward)
+
+mean_final_reward = np.mean(final_reward, axis=0)
+stdev_reward= np.std(final_reward, axis=0) / np.sqrt(Settings.NUM_OF_DAYS)
+print("MEAN: ")
+print(mean_final_reward)
+
+
+
 best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
 
+fig, ax = plt.subplots(nrows=1,ncols=3)
+ax[0].plot(mean_cumulative_regret, color='blue', label='UCB-1')
+ax[0].fill_between(range(Settings.NUM_OF_DAYS), mean_cumulative_regret - stdev_regret,mean_cumulative_regret + stdev_regret, alpha=0.4)
+ax[0].set_title('Cumulative Regret')
+
+ax[1].plot(mean_cumulative_reward, color='blue', label='UCB-1')
+ax[1].fill_between(range(Settings.NUM_OF_DAYS), mean_cumulative_reward - stdev_cumulative_reward, mean_cumulative_reward + stdev_cumulative_reward, alpha=0.4)
+ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
+ax[1].set_title('Cumulative reward')
+
+ax[2].plot(mean_final_reward, color='blue', label='UCB-1')
+ax[2].fill_between(range(Settings.NUM_OF_DAYS), mean_final_reward - stdev_reward, mean_final_reward + stdev_reward, alpha=0.4)
+ax[2].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
+ax[2].set_title('Reward')
+
+
+ax[0].legend()
+ax[1].legend()
+ax[2].legend()
+plt.show()
+
+
+
+'''''''''
+
+graph = Graph(mode="full", weights=True)
+env = Non_stationary_environment(4, graph, 1)
+learner = Ucb_Change_detection(4, env.prices, env.secondaries)
+
+clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
+best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
+best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
 for i in range(Settings.NUM_OF_DAYS):
     pulled_arms = learner.act()
@@ -205,7 +305,7 @@ for i in range(Settings.NUM_OF_DAYS):
         visited_products, num_bought_products, num_primary = env.round(pulled_arms)
         learner.updateHistory(pulled_arms, visited_products, num_bought_products,num_primary)
     learner.update(pulled_arms)
-    if(i==500):
+    if(i==100):
         print("Cambio conv rates"+str(i))
         env.setNewConvRates(new_conv_rates)
 
@@ -225,7 +325,7 @@ ax[0].legend()
 ax[1].legend()
 plt.show()
 
-
+'''
 
 
 
