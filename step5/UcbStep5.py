@@ -166,16 +166,16 @@ best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
 
 fig, ax = plt.subplots(nrows=1,ncols=3)
-ax[0].plot(mean_cumulative_regret, color='blue', label='UCB-1')
+ax[0].plot(mean_cumulative_regret, color='blue', label='UCB-5')
 ax[0].fill_between(range(Settings.NUM_OF_DAYS), mean_cumulative_regret - stdev_regret,mean_cumulative_regret + stdev_regret, alpha=0.4)
 ax[0].set_title('Cumulative Regret')
 
-ax[1].plot(mean_cumulative_reward, color='blue', label='UCB-1')
+ax[1].plot(mean_cumulative_reward, color='blue', label='UCB-5')
 ax[1].fill_between(range(Settings.NUM_OF_DAYS), mean_cumulative_reward - stdev_cumulative_reward, mean_cumulative_reward + stdev_cumulative_reward, alpha=0.4)
 ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
 ax[1].set_title('Cumulative reward')
 
-ax[2].plot(mean_final_reward, color='blue', label='UCB-1')
+ax[2].plot(mean_final_reward, color='blue', label='UCB-5')
 ax[2].fill_between(range(Settings.NUM_OF_DAYS), mean_final_reward - stdev_reward, mean_final_reward + stdev_reward, alpha=0.4)
 ax[2].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
 ax[2].set_title('Reward')
