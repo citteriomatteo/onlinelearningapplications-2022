@@ -10,7 +10,7 @@ NUM_OF_DAYS = 100
 WINDOW_SIZE = int(np.sqrt(NUM_OF_DAYS))
 
 # Number of user interactions per day
-DAILY_INTERACTIONS = 20
+DAILY_INTERACTIONS = 100
 
 NUM_PLOT_ITERATION = 20
 

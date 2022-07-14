@@ -14,7 +14,7 @@ from Social_Influence.Page import Page
 
 
 class Ucb(Learner):
-    def __init__(self, n_arms, prices, secondaries, num_product_sold, graph):
+    def __init__(self, n_arms, prices, secondaries, num_product_sold, graph, alpha_ratios):
         super().__init__(n_arms, len(prices))
         self.prices = prices
         self.pricesMeanPerProduct = np.mean(self.prices, 1)
@@ -27,6 +27,7 @@ class Ucb(Learner):
         self.num_product_sold = num_product_sold
         self.n = np.zeros((self.n_products, self.n_arms))
         self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
+        self.alpha_ratios = alpha_ratios
 
     def reset(self):
         self.__init__(self.n_arms, self.prices, self.graph)
@@ -38,6 +39,17 @@ class Ucb(Learner):
         """
         idx = np.argmax((self.widths + self.means) * ((self.prices*self.num_product_sold) + self.nearbyReward), axis=1)
         return idx
+
+    def revenue_given_arms(self, arms):
+        means = [i[j] for i, j in zip(self.means, arms)]
+        prices = [i[j] for i, j in zip(self.prices, arms)]
+        num_product_sold = [i[j] for i, j in zip(self.num_product_sold, arms)]
+        nearby_reward = [i[j] for i, j in zip(self.nearbyReward, arms)]
+        aaa = np.multiply(prices, num_product_sold)
+        bbb = aaa + nearby_reward
+        ccc = np.multiply(bbb,means)
+        ddd = np.multiply(ccc, self.alpha_ratios)
+        return np.sum(np.multiply(self.alpha_ratios, np.multiply(means, np.multiply(prices, num_product_sold))+nearby_reward))
 
     def updateHistory(self, arm_pulled, visited_products, num_bought_products):
         super().update(arm_pulled, visited_products, num_bought_products)
@@ -169,7 +181,7 @@ final_cumulative_reward = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF
 for k in range (Settings.NUM_PLOT_ITERATION):
     graph = Graph(mode="full", weights=True)
     env = EnvironmentPricing(4, graph, 1)
-    learner = Ucb(4, env.prices, env.secondaries, env.num_product_sold[0], graph)
+    learner = Ucb(4, env.prices, env.secondaries, env.num_product_sold[0], graph, env.alpha_ratios[0][1:])
     clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold,
                               graph, env.alpha_ratios)
     best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
@@ -183,9 +195,10 @@ for k in range (Settings.NUM_PLOT_ITERATION):
             learner.updateHistory(pulled_arms, visited_products, num_bought_products)
 
         learner.update(pulled_arms)
-        actual_rew.append(learner.average_reward[-1])
+        actual_rew.append(learner.revenue_given_arms(pulled_arms))
         opt_rew.append(best_revenue)
 
+    a = learner.revenue_given_arms(pulled_arms)
     final_cumulative_regret[k, :] = np.cumsum(opt_rew) - np.cumsum(actual_rew)
     final_cumulative_reward[k,:] = np.cumsum(actual_rew)
     final_reward[k:] = actual_rew
