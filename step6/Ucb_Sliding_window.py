@@ -40,7 +40,7 @@ class UCB_Sliding_Window(Learner):
         """
         idx = np.argmax((self.widths + self.means) * ((self.prices * self.num_product_sold_estimation) + self.nearbyReward), axis=1)
         for i in range(len(idx)):
-            for j in range(4):
+            for j in range(len(self.prices)-1):
                 if self.n[i, j] == 0: idx[i] = j
         return idx
 

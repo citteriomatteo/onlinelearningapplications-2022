@@ -176,7 +176,7 @@ print(mean_final_reward)
 best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
 
-fig, ax = plt.subplots(nrows=1,ncols=3)
+fig, ax = plt.subplots(nrows=3,ncols=1, figsize=(12,12))
 ax[0].plot(mean_cumulative_regret, color='blue', label='UCB-5')
 ax[0].fill_between(range(Settings.NUM_OF_DAYS), mean_cumulative_regret - stdev_regret,mean_cumulative_regret + stdev_regret, alpha=0.4)
 ax[0].set_title('Cumulative Regret')
