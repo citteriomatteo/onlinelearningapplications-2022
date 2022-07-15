@@ -155,7 +155,7 @@ for k in range (Settings.NUM_PLOT_ITERATION):
     clairvoyant_after_change = Clairvoyant(env.prices, new_conv_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
     best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
     best_revenue_after_change = clairvoyant_after_change.revenue_given_arms([0, 2, 1, 0, 2], 0)
-    best_revenue_array = [best_revenue for i in range(500)] + [best_revenue_after_change for i in range(500)]
+    best_revenue_array = [best_revenue for i in range(Settings.DAY_OF_ABRUPT_CHANGE)] + [best_revenue_after_change for i in range(Settings.DAY_OF_ABRUPT_CHANGE)]
     opt_rew = []
     actual_rew = []
     for i in range(Settings.NUM_OF_DAYS):
