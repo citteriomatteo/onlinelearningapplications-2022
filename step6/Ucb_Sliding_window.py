@@ -123,11 +123,11 @@ class UCB_Sliding_Window(Learner):
 
 new_conv_rates=[
     [
-      [0.85, 0.47, 0.45, 0.2],
-      [0.45, 0.4, 0.9, 0.25],
-      [0.55, 0.8, 0.5, 0.4],
-      [0.8, 0.35, 0.32, 0.25],
-      [0.6, 0.55, 0.93, 0.52] ],
+      [0.7, 0.47, 0.45, 0.2],
+      [0.35, 0.3, 0.8, 0.25],
+      [0.45, 0.8, 0.4, 0.4],
+      [0.7, 0.35, 0.32, 0.25],
+      [0.5, 0.55, 0.85, 0.52] ],
 
     [ [0.9, 0.45, 0.4, 0.35],
       [0.4, 0.8, 0.3, 0.25],
@@ -148,7 +148,7 @@ final_cumulative_reward = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF
 
 for k in range (Settings.NUM_PLOT_ITERATION):
     graph = Graph(mode="full", weights=True)
-    env = EnvironmentPricing(4, graph, 1)
+    env = Non_stationary_environment(4, graph, 1)
     learner = UCB_Sliding_Window(4, env.prices)
 
     clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
@@ -158,16 +158,21 @@ for k in range (Settings.NUM_PLOT_ITERATION):
     best_revenue_array = [best_revenue for i in range(Settings.DAY_OF_ABRUPT_CHANGE)] + [best_revenue_after_change for i in range(Settings.DAY_OF_ABRUPT_CHANGE)]
     opt_rew = []
     actual_rew = []
+    best_rew = best_revenue
     for i in range(Settings.NUM_OF_DAYS):
         pulled_arms = learner.act()
-        if i%100==0: print(pulled_arms)
+        print(pulled_arms)
+        if i==Settings.DAY_OF_ABRUPT_CHANGE:
+            env.setNewConvRates(new_conv_rates)
+            print("Cambio")
+            best_rew=best_revenue_after_change
         for j in range(Settings.DAILY_INTERACTIONS):
             visited_products, num_bought_products, num_primary = env.round(pulled_arms)
             learner.updateHistory(pulled_arms, visited_products, num_bought_products, num_primary)
 
         learner.update(pulled_arms)
         actual_rew.append(learner.revenue_given_arms(arms=pulled_arms))
-        opt_rew.append(best_revenue)
+        opt_rew.append(best_rew)
 
     final_cumulative_regret[k, :] = np.cumsum(opt_rew) - np.cumsum(actual_rew)
     final_cumulative_reward[k,:] = np.cumsum(actual_rew)
