@@ -249,11 +249,11 @@ print("MEAN: ")
 print(mean_final_reward)
 
 fig, ax = plt.subplots(nrows=3,ncols=1, figsize=(12,12))
-ax[0].plot(mean_cumulative_regret, color='blue', label='UCB Sliding Window')
+ax[0].plot(mean_cumulative_regret, color='blue', label='UCB Change Detection')
 ax[0].fill_between(range(Settings.NUM_OF_DAYS), mean_cumulative_regret - stdev_regret,mean_cumulative_regret + stdev_regret, alpha=0.4)
 ax[0].set_title('Cumulative Regret')
 
-ax[1].plot(mean_cumulative_reward, color='blue', label='UCB Sliding Window')
+ax[1].plot(mean_cumulative_reward, color='blue', label='UCB Change Detection')
 ax[1].fill_between(range(Settings.NUM_OF_DAYS), mean_cumulative_reward - stdev_cumulative_reward, mean_cumulative_reward + stdev_cumulative_reward, alpha=0.4)
 ax[1].plot(np.cumsum(best_revenue_array)[:Settings.DAY_OF_ABRUPT_CHANGE], color='red', linestyle='--', label='Clairvoyant')
 xx = [i for i in range(Settings.DAY_OF_ABRUPT_CHANGE+1,Settings.NUM_OF_DAYS)]
@@ -261,7 +261,7 @@ ax[1].plot(xx, np.cumsum(best_revenue_array)[Settings.DAY_OF_ABRUPT_CHANGE+1:],
            color='green', linestyle='--', label='Clairvoyant after abrupt change')
 ax[1].set_title('Cumulative reward')
 
-ax[2].plot(mean_final_reward, color='blue', label='UCB Sliding Window')
+ax[2].plot(mean_final_reward, color='blue', label='UCB Change Detection')
 ax[2].fill_between(range(Settings.NUM_OF_DAYS), mean_final_reward - stdev_reward, mean_final_reward + stdev_reward, alpha=0.4)
 ax[2].axhline(y=best_revenue, xmin=0., xmax=Settings.DAY_OF_ABRUPT_CHANGE/Settings.NUM_OF_DAYS,
               color='red', linestyle='--', label='Clairvoyant')
