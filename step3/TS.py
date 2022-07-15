@@ -11,7 +11,7 @@ from Social_Influence.Page import Page
 
 class TS(Learner):
 
-    def __init__(self, n_arms, prices, secondaries, num_product_sold, graph):
+    def __init__(self, n_arms, prices, secondaries, num_product_sold, graph,alpha_ratios):
         super().__init__(n_arms, len(prices))
         self.prices = prices
         self.beta_parameters = np.ones((self.n_products, n_arms, 2))
@@ -23,6 +23,7 @@ class TS(Learner):
         self.nearbyReward = np.zeros(prices.shape)
         self.currentBestArms = np.zeros(len(prices))
         self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
+        self.alpha_ratios = alpha_ratios
 
     def act(self):
         """
@@ -150,6 +151,29 @@ class TS(Learner):
             t += 1
         return visited_products
 
+    def revenue_given_arms(self, arms):
+        conversion_of_current = np.zeros(self.n_products)
+        conversion_of_current_alpha = [i[j][0] for i, j in zip(self.beta_parameters, arms)]
+        conversion_of_current_beta = [i[j][1] for i, j in zip(self.beta_parameters, arms)]
+        nearby_reward = [i[j] for i, j in zip(self.nearbyReward, arms)]
+
+        for prod in range(self.n_products):
+            conversion_of_current[prod] = conversion_of_current_alpha[prod] / (
+                    conversion_of_current_beta[prod] + conversion_of_current_alpha[prod])
+            
+        price_of_current = np.array([i[j] for i, j in zip(self.prices, arms)])
+        num_product_sold = [i[j] for i, j in zip(self.num_product_sold, arms)]
+        return np.sum(np.multiply(self.alpha_ratios, np.multiply(conversion_of_current, np.multiply(price_of_current, num_product_sold)) + nearby_reward))
+
+        
+        '''''''''
+        means = [i[j] for i, j in zip(self.means, arms)]
+        prices = [i[j] for i, j in zip(self.prices, arms)]
+        num_product_sold = [i[j] for i, j in zip(self.num_product_sold, arms)]
+        nearby_reward = [i[j] for i, j in zip(self.nearbyReward, arms)]
+        return np.sum(np.multiply(self.alpha_ratios, np.multiply(means, np.multiply(prices, num_product_sold))+nearby_reward))
+        '''''''''
+
     def update(self, pulled_arm):
 
         self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + \
@@ -187,7 +211,7 @@ final_cumulative_reward = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF
 for k in range (Settings.NUM_PLOT_ITERATION):
     graph = Graph(mode="full", weights=True)
     env = EnvironmentPricing(4, graph, 1)
-    learner = TS(4, env.prices, env.secondaries, env.num_product_sold[0], graph)
+    learner = TS(4, env.prices, env.secondaries, env.num_product_sold[0], graph,env.alpha_ratios[0][1:])
     clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold,
                               graph, env.alpha_ratios)
     best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
@@ -201,7 +225,7 @@ for k in range (Settings.NUM_PLOT_ITERATION):
             learner.updateHistory(pulled_arms, visited_products, num_bought_products)
 
         learner.update(pulled_arms)
-        actual_rew.append(learner.average_reward[-1])
+        actual_rew.append(learner.revenue_given_arms(arms=pulled_arms))
         opt_rew.append(best_revenue)
 
     final_cumulative_regret[k, :] = np.cumsum(opt_rew) - np.cumsum(actual_rew)

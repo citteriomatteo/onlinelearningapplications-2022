@@ -204,18 +204,19 @@ for k in range (Settings.NUM_PLOT_ITERATION):
     clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold,
                               graph, env.alpha_ratios)
     best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
-    clairvoyant_shif = Clairvoyant(env.prices, new_conv_rates, env.classes, env.secondaries, env.num_product_sold,
+    clairvoyant_shift = Clairvoyant(env.prices, new_conv_rates, env.classes, env.secondaries, env.num_product_sold,
                               graph, env.alpha_ratios)
-    best_new_revenue = clairvoyant.revenue_given_arms([0, 2, 1, 0, 2], 0)
+    best_new_revenue = clairvoyant_shift.revenue_given_arms([0, 2, 1, 0, 2], 0)
     learner = Ucb_Change_detection(4, env.prices, env.secondaries)
     opt_rew = []
     actual_rew = []
     best_rew = best_revenue
     for i in range(Settings.NUM_OF_DAYS):
-        if(i==200):
+        if(i== (Settings.NUM_OF_DAYS/2)):
             env.setNewConvRates(new_conv_rates)
             print("CAMBIO")
             best_rew=best_new_revenue
+            #print(best_new_revenue)
         pulled_arms = learner.act()
         print(pulled_arms)
 
@@ -225,7 +226,7 @@ for k in range (Settings.NUM_PLOT_ITERATION):
 
         learner.update(pulled_arms)
         actual_rew.append(learner.average_reward[-1])
-        opt_rew.append(best_new_revenue)
+        opt_rew.append(best_rew)
 
     final_cumulative_regret[k, :] = np.cumsum(opt_rew) - np.cumsum(actual_rew)
     final_cumulative_reward[k,:] = np.cumsum(actual_rew)
@@ -266,18 +267,23 @@ best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
 
 fig, ax = plt.subplots(nrows=1,ncols=3)
-ax[0].plot(mean_cumulative_regret, color='blue', label='UCB-1')
+
+ax[0].plot(mean_cumulative_regret, color='blue', label='UCB-CD')
 ax[0].fill_between(range(Settings.NUM_OF_DAYS), mean_cumulative_regret - stdev_regret,mean_cumulative_regret + stdev_regret, alpha=0.4)
 ax[0].set_title('Cumulative Regret')
+ax[0].axvline(x=Settings.NUM_OF_DAYS/2)
 
-ax[1].plot(mean_cumulative_reward, color='blue', label='UCB-1')
+ax[1].plot(mean_cumulative_reward, color='blue', label='UCB-CD')
 ax[1].fill_between(range(Settings.NUM_OF_DAYS), mean_cumulative_reward - stdev_cumulative_reward, mean_cumulative_reward + stdev_cumulative_reward, alpha=0.4)
 ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
 ax[1].set_title('Cumulative reward')
+ax[1].axvline(x=Settings.NUM_OF_DAYS/2)
 
-ax[2].plot(mean_final_reward, color='blue', label='UCB-1')
+ax[2].plot(mean_final_reward, color='blue', label='UCB-CD')
 ax[2].fill_between(range(Settings.NUM_OF_DAYS), mean_final_reward - stdev_reward, mean_final_reward + stdev_reward, alpha=0.4)
 ax[2].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
+ax[2].axhline(y=best_new_revenue, xmin=0.5, xmax=1., color='green', linestyle='--', label='Clairvoyant after abrupt change')
+ax[2].axvline(x=Settings.NUM_OF_DAYS/2)
 ax[2].set_title('Reward')
 
 

@@ -4,7 +4,7 @@ import numpy as np
 LAMBDA = 0.7
 
 # Number of days to test
-NUM_OF_DAYS = 1000
+NUM_OF_DAYS = 300
 
 # Day at which we had an abrupt change
 DAY_OF_ABRUPT_CHANGE = int(NUM_OF_DAYS/2)
@@ -13,7 +13,7 @@ DAY_OF_ABRUPT_CHANGE = int(NUM_OF_DAYS/2)
 WINDOW_SIZE = int(np.sqrt(NUM_OF_DAYS))
 
 # Number of user interactions per day
-DAILY_INTERACTIONS = 100
+DAILY_INTERACTIONS = 80
 
 NUM_PLOT_ITERATION = 5
 

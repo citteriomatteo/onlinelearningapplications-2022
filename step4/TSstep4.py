@@ -23,6 +23,8 @@ class TS(Learner):
         self.nearbyReward = np.zeros(prices.shape)
         self.currentBestArms = np.zeros(len(prices))
         self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
+        self.alpha_ratios = np.zeros(self.n_products)
+        self.times_visited_as_first_node = np.zeros(self.n_products)
 
     def act(self):
         """
@@ -37,7 +39,7 @@ class TS(Learner):
             idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold_estimation[prod]) + self.nearbyReward[prod]))
         return idx
 
-    def updateHistory(self, pulled_arm, visited_products, num_bought_products):
+    def updateHistory(self, pulled_arm, visited_products, num_bought_products,num_primary):
         """
         update alpha and beta parameters
         :param pulled_arm: arm pulled for every product
@@ -50,6 +52,7 @@ class TS(Learner):
         :rtype: none
         """
         super().update(pulled_arm, visited_products, num_bought_products)
+        self.times_visited_as_first_node[num_primary] += 1
         for prod in range(self.n_products):
             if visited_products[prod] == 1:
                 if num_bought_products[prod] > 0:
@@ -150,6 +153,24 @@ class TS(Learner):
             t += 1
         return visited_products
 
+    def revenue_given_arms(self, arms):
+        conversion_of_current = np.zeros(self.n_products)
+        conversion_of_current_alpha = [i[j][0] for i, j in zip(self.beta_parameters, arms)]
+        conversion_of_current_beta = [i[j][1] for i, j in zip(self.beta_parameters, arms)]
+        nearby_reward = [i[j] for i, j in zip(self.nearbyReward, arms)]
+
+        for prod in range(self.n_products):
+            conversion_of_current[prod] = conversion_of_current_alpha[prod] / (
+                    conversion_of_current_beta[prod] + conversion_of_current_alpha[prod])
+
+        price_of_current = np.array([i[j] for i, j in zip(self.prices, arms)])
+        num_product_sold = [i[j] for i, j in zip(self.num_product_sold_estimation, arms)]
+        for prod in range(self.n_products):
+            if(num_product_sold[prod]== np.inf):
+                num_product_sold[prod]=0
+        return np.sum(np.multiply(self.alpha_ratios, np.multiply(conversion_of_current, np.multiply(price_of_current,
+                                                                                                    num_product_sold)) + nearby_reward))
+
     def update(self, pulled_arm):
         self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + self.success_per_arm_batch[:, :]
         self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] \
@@ -159,6 +180,8 @@ class TS(Learner):
                 self.num_product_sold_estimation[prod][pulled_arm[prod]] = np.mean(self.boughts_per_arm[prod][pulled_arm[prod]])
                 if (self.num_product_sold_estimation[prod][pulled_arm[prod]] == 0):
                     self.num_product_sold_estimation[prod][pulled_arm[prod]] = np.inf
+            self.alpha_ratios[prod] = self.times_visited_as_first_node[prod] / np.sum(
+                self.times_visited_as_first_node)
 
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
@@ -196,23 +219,26 @@ for k in range (Settings.NUM_PLOT_ITERATION):
     clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold,
                               graph, env.alpha_ratios)
     best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
+    print(best_revenue)
     opt_rew = []
     actual_rew = []
     for i in range(Settings.NUM_OF_DAYS):
         pulled_arms = learner.act()
         print(pulled_arms)
         for j in range(Settings.DAILY_INTERACTIONS):
-            visited_products, num_bought_products, a = env.round(pulled_arms)
-            learner.updateHistory(pulled_arms, visited_products, num_bought_products)
+            visited_products, num_bought_products, num_primary = env.round(pulled_arms)
+            learner.updateHistory(pulled_arms, visited_products, num_bought_products, num_primary)
 
         learner.update(pulled_arms)
-        actual_rew.append(learner.average_reward[-1])
+        actual_rew.append(learner.revenue_given_arms(arms=pulled_arms))
+        print(actual_rew[-1])
         opt_rew.append(best_revenue)
 
     final_cumulative_regret[k, :] = np.cumsum(opt_rew) - np.cumsum(actual_rew)
     final_cumulative_reward[k,:] = np.cumsum(actual_rew)
     final_reward[k:] = actual_rew
 
+print(learner.beta_parameters)
 
 #REGRET
 print("FINAL CUM REGRET: ")
