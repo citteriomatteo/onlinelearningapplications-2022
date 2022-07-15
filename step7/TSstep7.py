@@ -56,7 +56,7 @@ class TS(Learner):
             idx[prod] = np.max(beta * ((self.prices[prod] * self.num_product_sold_estimation[prod]) + self.nearbyReward[prod]))
         return idx
 
-    def updateHistory(self, pulled_arm, visited_products, num_bought_products):
+    def updateHistory(self, pulled_arm, visited_products, num_bought_products, num_primary=None):
         """
         update alpha and beta parameters
         :param pulled_arm: arm pulled for every product

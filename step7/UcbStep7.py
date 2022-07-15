@@ -23,6 +23,8 @@ class Ucb(Learner):
         self.secondaries = secondaries
         self.currentBestArms = np.zeros(len(prices))
         self.n = np.zeros((self.n_products, self.n_arms))
+        self.times_product_visited_as_first_node = np.zeros(self.n_products)
+        self.alpha_ratios = np.zeros(self.n_products)
 
     def reset(self):
         self.__init__(self.n_arms, self.prices, self.graph)
@@ -41,6 +43,14 @@ class Ucb(Learner):
         idx = np.argmax(
             (self.widths + self.means) * ((self.prices * self.num_product_sold_estimation) + self.nearbyReward), axis=1)
         return idx
+
+    def revenue_given_arms(self, arms):
+        means = [i[j] for i, j in zip(self.means, arms)]
+        prices = [i[j] for i, j in zip(self.prices, arms)]
+        num_product_sold = [i[j] for i, j in zip(self.num_product_sold_estimation, arms)]
+        nearby_reward = [i[j] for i, j in zip(self.nearbyReward, arms)]
+        return np.sum(np.multiply(self.alpha_ratios, np.multiply(means, np.multiply(prices, num_product_sold))+nearby_reward))
+
 
     def get_opt_arm_value(self):
         """
@@ -141,8 +151,10 @@ class Ucb(Learner):
             t += 1
         return visited_products
 
-    def updateHistory(self, arm_pulled, visited_products, num_bought_products):
+    def updateHistory(self, arm_pulled, visited_products, num_bought_products, num_primary=None):
         super().update(arm_pulled, visited_products, num_bought_products)
+        if num_primary is not None:
+            self.times_product_visited_as_first_node[num_primary] += 1
         current_prices = [i[j] for i, j in zip(self.prices, arm_pulled)]
         current_reward = sum(num_bought_products * current_prices)
         self.current_reward.append(current_reward)
@@ -157,6 +169,8 @@ class Ucb(Learner):
         """
         self.currentBestArms = arm_pulled
         for prod in range(self.n_products):
+            self.alpha_ratios[prod] = \
+                self.times_product_visited_as_first_node[prod] / np.sum(self.times_product_visited_as_first_node)
             new_mean = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
             if not np.isnan(new_mean):
                 self.means[prod][arm_pulled[prod]] = new_mean
@@ -185,8 +199,9 @@ class Ucb(Learner):
                                                           self.currentBestArms[temp]]
 
     def update_for_all_arms(self):
-
         for prod in range(self.n_products):
+            self.alpha_ratios[prod] = \
+                self.times_product_visited_as_first_node[prod] / np.sum(self.times_product_visited_as_first_node)
             for price in range(self.n_arms):
                 if len(self.rewards_per_arm[prod][price]) > 0:
                     new_mean = np.mean(self.rewards_per_arm[prod][price])
