@@ -6,6 +6,9 @@ LAMBDA = 0.7
 # Number of days to test
 NUM_OF_DAYS = 1000
 
+# Day at which we had an abrupt change
+DAY_OF_ABRUPT_CHANGE = int(NUM_OF_DAYS/2)
+
 # Window size of days for Sliding Window (proportional to the square root of NUM_OF_DAYS)
 WINDOW_SIZE = int(np.sqrt(NUM_OF_DAYS))
 
