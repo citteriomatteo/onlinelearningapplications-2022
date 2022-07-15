@@ -29,6 +29,7 @@ class ContextGenerator:
         self.collected_arms = None
         self.collected_visits = None
         self.collected_bought_products = None
+        self.num_primaries = None
         self.collected_features = None
 
         self.collected_next_purchases = np.array([], dtype=np.int)
@@ -44,7 +45,7 @@ class ContextGenerator:
 
         self.update_contextual_learner()
 
-    def collect_daily_data(self, pulled_arms, visited_products, num_bought_products, features):
+    def collect_daily_data(self, pulled_arms, visited_products, num_bought_products, num_primaries, features):
         """
         Collect the data produced by the environment in one day
         :param average_rewards: average on the new rewards collected at day t, useful for the plots
@@ -67,6 +68,11 @@ class ContextGenerator:
             self.collected_bought_products = num_bought_products
         else:
             self.collected_bought_products = np.vstack((self.collected_bought_products, num_bought_products))
+
+        if self.num_primaries is None:
+            self.num_primaries = num_primaries
+        else:
+            self.num_primaries = np.vstack((self.num_primaries, num_primaries))
 
         if self.collected_features is None:
             self.collected_features = features
@@ -132,8 +138,6 @@ class ContextGenerator:
             self.update_contextual_learner()
             print("AFTER SPLIT: \n")
             self.contextual_learner.print_context_tree()
-        else:
-            aaa = 0
 
     def iterate_over_features(self, leaf):
         """
@@ -190,12 +194,14 @@ class ContextGenerator:
             left_learner = self.get_offline_trained_learner(pulled_arms=self.collected_arms[left_split_indices],
                                                             visits=self.collected_visits[left_split_indices],
                                                             num_bought=self.collected_bought_products[
-                                                                left_split_indices]
+                                                                left_split_indices],
+                                                            num_primaries=self.num_primaries[left_split_indices]
                                                             )
             right_learner = self.get_offline_trained_learner(pulled_arms=self.collected_arms[right_split_indices],
                                                              visits=self.collected_visits[right_split_indices],
                                                              num_bought=self.collected_bought_products[
-                                                                 right_split_indices]
+                                                                 right_split_indices],
+                                                             num_primaries=self.num_primaries[right_split_indices]
                                                              )
             left_value = left_learner.get_opt_arm_value()
             right_value = right_learner.get_opt_arm_value()
@@ -232,7 +238,7 @@ class ContextGenerator:
         ret_value = mean - np.sqrt(-np.log(self.confidence) / (2 * n_samples))
         return ret_value
 
-    def get_offline_trained_learner(self, pulled_arms, visits, num_bought):
+    def get_offline_trained_learner(self, pulled_arms, visits, num_bought, num_primaries):
         """
         Train a new learner to be set as base learner of a new context
         :param pulled_arms: history of pulled arms
@@ -240,9 +246,6 @@ class ContextGenerator:
         :param num_bought: received number of items bought
         :return:
         """
-
-        # TODO: probably need to make a deepcopy of the root and put the children to None
-        # learner = copy.deepcopy(self.contextual_learner.get_root_learner())
 
         learner = None
 
@@ -253,7 +256,7 @@ class ContextGenerator:
             learner = TS(4, root_learner.prices, root_learner.secondaries, root_learner.graph)
 
         for i in range(len(pulled_arms)):
-            learner.updateHistory(pulled_arms[i], visits[i], num_bought[i])
+            learner.updateHistory(pulled_arms[i], visits[i], num_bought[i], num_primaries[i])
 
         if pulled_arms.shape[0] > 0:
             learner.update_for_all_arms()
