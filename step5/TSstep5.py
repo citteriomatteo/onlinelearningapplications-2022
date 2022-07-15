@@ -24,6 +24,7 @@ class TS(Learner):
         self.times_bought_as_first_node = np.zeros((self.n_products, self.n_arms, self.n_products))
         self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
+        self.alpha_ratios = np.zeros(self.n_products)
 
 
 
@@ -98,6 +99,24 @@ class TS(Learner):
                                                       * num_product_sold_of_current_best * (alpha_near/(alpha_near+beat_near)))
         return nearbyRewardsTable
 
+    def revenue_given_arms(self, arms):
+        conversion_of_current = np.zeros(self.n_products)
+        conversion_of_current_alpha = [i[j][0] for i, j in zip(self.beta_parameters, arms)]
+        conversion_of_current_beta = [i[j][1] for i, j in zip(self.beta_parameters, arms)]
+        nearby_reward = [i[j] for i, j in zip(self.nearbyReward, arms)]
+
+        for prod in range(self.n_products):
+            conversion_of_current[prod] = conversion_of_current_alpha[prod] / (
+                    conversion_of_current_beta[prod] + conversion_of_current_alpha[prod])
+
+        price_of_current = np.array([i[j] for i, j in zip(self.prices, arms)])
+        num_product_sold = [i[j] for i, j in zip(self.num_product_sold_estimation, arms)]
+        for prod in range(self.n_products):
+            if(num_product_sold[prod]== np.inf):
+                num_product_sold[prod]=0
+        return np.sum(np.multiply(self.alpha_ratios, np.multiply(conversion_of_current, np.multiply(price_of_current,
+                                                                                                    num_product_sold)) + nearby_reward))
+
 
 
     def update(self,pulled_arm):
@@ -110,10 +129,13 @@ class TS(Learner):
                                         + self.pulled_per_arm_batch - self.success_per_arm_batch
         num_products = len(pulled_arm)
         for prod in range(num_products):
+            self.alpha_ratios[prod] = np.sum(self.times_visited_as_first_node[prod][:]) / np.sum(
+                self.times_visited_as_first_node)
             if len(self.boughts_per_arm[prod][pulled_arm[prod]])!=0:
                 self.num_product_sold_estimation[prod][pulled_arm[prod]] = np.mean(self.boughts_per_arm[prod][pulled_arm[prod]])
                 if (self.num_product_sold_estimation[prod][pulled_arm[prod]] == 0):
                     self.num_product_sold_estimation[prod][pulled_arm[prod]] = np.inf
+
             for t1 in range(self.n_arms):
                 for t2 in range(num_products):
                     if self.times_bought_as_first_node[prod][t1][t2] > 0:
@@ -150,7 +172,7 @@ for k in range (Settings.NUM_PLOT_ITERATION):
             learner.updateHistory(pulled_arms, visited_products, num_bought_products, num_primary)
 
         learner.update(pulled_arms)
-        actual_rew.append(learner.average_reward[-1])
+        actual_rew.append(learner.revenue_given_arms(arms=pulled_arms))
         opt_rew.append(best_revenue)
 
     final_cumulative_regret[k, :] = np.cumsum(opt_rew) - np.cumsum(actual_rew)

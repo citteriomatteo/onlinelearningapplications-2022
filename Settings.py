@@ -4,13 +4,13 @@ import numpy as np
 LAMBDA = 0.7
 
 # Number of days to test
-NUM_OF_DAYS = 1000
+NUM_OF_DAYS = 300
 
 # Window size of days for Sliding Window (proportional to the square root of NUM_OF_DAYS)
 WINDOW_SIZE = int(np.sqrt(NUM_OF_DAYS))
 
 # Number of user interactions per day
-DAILY_INTERACTIONS = 100
+DAILY_INTERACTIONS = 80
 
 NUM_PLOT_ITERATION = 5
 
