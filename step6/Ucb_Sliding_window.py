@@ -2,14 +2,14 @@ import numpy as np
 from Pricing import Learner
 from Pricing.Learner import *
 from Pricing.pricing_environment import EnvironmentPricing
-from Non_stationary_environment import Non_stationary_environment
+from step6.Non_stationary_environment import *
 from Pricing.Learner import *
 from Pricing.pricing_environment import EnvironmentPricing
 from Social_Influence.Graph import Graph
 from Pricing.Clairvoyant import Clairvoyant
 import Settings
 from matplotlib import pyplot as plt
-from Cumulative_sum import CUSUM
+from step6.Cumulative_sum import CUSUM
 
 class UCB_Sliding_Window(Learner):
     def __init__(self, n_arms, prices):
@@ -120,6 +120,7 @@ class UCB_Sliding_Window(Learner):
                                                       * num_product_sold_of_current_best * self.means[node][price])
         return nearbyRewardsTable
 
+'''''
 
 new_conv_rates=[
     [
@@ -141,6 +142,7 @@ new_conv_rates=[
       [0.4, 0.82, 0.32, 0.25],
       [0.4, 0.95, 0.35, 0.3]]
   ]
+
 
 final_reward= np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
 final_cumulative_regret = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
@@ -231,3 +233,4 @@ ax[0].legend()
 ax[1].legend()
 ax[2].legend()
 plt.show()
+'''

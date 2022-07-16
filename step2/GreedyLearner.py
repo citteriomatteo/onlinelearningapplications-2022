@@ -215,7 +215,7 @@ class Greedy_Learner(Learner):
                 # be no more pulled by putting its probability equal to 0
                 self.classes_probability[chosen_class] = 0
 
-
+''''
 graph_sample = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph_sample, 1)
 learner = Greedy_Learner(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold,
@@ -232,3 +232,4 @@ print('Average reward with best arms: ', learner.revenue_given_arms([0, 1, 2, 2,
 print('Average regret per iteration: ', learner.revenue_given_arms([0, 1, 2, 2, 3],0) - learner.revenue_given_arms(learner.max_idxs[0],0),
       learner.revenue_given_arms([0, 2, 1, 0, 2], 1) - learner.revenue_given_arms(learner.max_idxs[1],1),
       learner.revenue_given_arms([1, 3, 1, 1, 1], 2) - learner.revenue_given_arms(learner.max_idxs[2],2))
+'''''

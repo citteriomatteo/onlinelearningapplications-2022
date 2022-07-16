@@ -208,6 +208,9 @@ class TS(Learner):
 
         self.average_reward.append(np.mean(self.current_reward[-Settings.DAILY_INTERACTIONS:]))
 
+
+'''''''''
+
 final_reward= np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
 final_cumulative_regret = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
 final_cumulative_reward = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
@@ -292,35 +295,8 @@ ax[0].legend()
 ax[1].legend()
 ax[2].legend()
 plt.show()
+'''
 
 
-'''''''''
-graph = Graph(mode="full", weights=True)
-env = EnvironmentPricing(4, graph, 1)
-learner = TS(4, env.prices, env.secondaries, graph)
-clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
-best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
-best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
 
-for i in range(Settings.NUM_OF_DAYS):
-    pulled_arms = learner.act()
-    print(pulled_arms)
-    for j in range(Settings.DAILY_INTERACTIONS):
-        visited_products, num_bought_products, a = env.round(pulled_arms)
-        learner.updateHistory(pulled_arms, visited_products, num_bought_products)
-    learner.update(pulled_arms)
-
-print(learner.num_product_sold_estimation)
-
-fig, ax = plt.subplots(nrows=1,ncols=2)
-ax[0].plot(learner.average_reward, color='green', label='TS')
-ax[0].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
-ax[0].set_title('Average reward')
-ax[1].plot(np.cumsum(learner.average_reward), color='green', label='TS')
-ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
-ax[1].set_title('Cumulative reward')
-ax[0].legend()
-ax[1].legend()
-plt.show()
-'''''
 

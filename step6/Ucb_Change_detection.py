@@ -1,4 +1,4 @@
-from Non_stationary_environment import Non_stationary_environment
+from step6.Non_stationary_environment import Non_stationary_environment
 import numpy as np
 from Pricing.Learner import *
 from Pricing.pricing_environment import EnvironmentPricing
@@ -6,7 +6,7 @@ from Social_Influence.Graph import Graph
 from Pricing.Clairvoyant import Clairvoyant
 import Settings
 from matplotlib import pyplot as plt
-from Cumulative_sum import CUSUM
+from step6.Cumulative_sum import CUSUM
 
 
 class Ucb_Change_detection(Learner):
@@ -161,7 +161,7 @@ class Ucb_Change_detection(Learner):
         return nearbyRewardsTable
 
 
-
+'''''''''
 new_conv_rates=[
     [
       [0.7, 0.47, 0.45, 0.2],
@@ -273,6 +273,7 @@ ax[0].legend()
 ax[1].legend()
 ax[2].legend()
 plt.show()
+'''''
 
 
 

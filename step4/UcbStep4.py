@@ -170,6 +170,7 @@ class Ucb(Learner):
                 for temp in range(self.n_products):
                     self.nearbyReward[prod][price] += self.means[prod][price]*self.visit_probability_estimation[prod][temp]*self.means[temp][self.currentBestArms[temp]]*self.num_product_sold_estimation[temp][self.currentBestArms[temp]]*self.prices[temp][self.currentBestArms[temp]]
 
+'''''''''
 final_reward= np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
 final_cumulative_regret = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
 final_cumulative_reward = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
@@ -254,37 +255,5 @@ ax[1].legend()
 ax[2].legend()
 plt.show()
 
-
-'''''''''
-graph = Graph(mode="full", weights=True)
-env = EnvironmentPricing(4, graph, 1)
-learner = Ucb(4, env.prices, env.secondaries, graph)
-clairvoyant = Clairvoyant(env.prices, env.conversion_rates, env.classes, env.secondaries, env.num_product_sold, graph, env.alpha_ratios)
-best_revenue = clairvoyant.revenue_given_arms([0, 1, 2, 2, 3], 0)
-best_revenue_array = [best_revenue for i in range(Settings.NUM_OF_DAYS)]
-
-for i in range(Settings.NUM_OF_DAYS):
-    pulled_arms = learner.act()
-    print(pulled_arms)
-    for j in range(Settings.DAILY_INTERACTIONS):
-        visited_products, num_bought_products, a = env.round(pulled_arms)
-        learner.updateHistory(pulled_arms, visited_products, num_bought_products)
-    learner.update(pulled_arms)
-
-print(learner.means)
-print(learner.widths)
-print((learner.widths + learner.means) * ((learner.prices*learner.num_product_sold_estimation) + learner.nearbyReward))
-fig, ax = plt.subplots(nrows=1,ncols=2)
-ax[0].plot(learner.average_reward, color='blue', label='UCB-4')
-ax[0].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
-ax[0].set_title('Average reward')
-ax[1].plot(np.cumsum(learner.average_reward), color='blue', label='UCB-4')
-ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
-ax[1].set_title('Cumulative reward')
-ax[0].legend()
-ax[1].legend()
-plt.show()
-print(learner.means)
-print(learner.widths)
-print((learner.widths + learner.means) * ((learner.prices*learner.num_product_sold_estimation) + learner.nearbyReward))
 '''''
+

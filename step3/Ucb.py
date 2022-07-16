@@ -169,7 +169,7 @@ class Ucb(Learner):
         return visited_products
 
 
-
+'''''''''
 final_reward= np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
 final_cumulative_regret = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
 final_cumulative_reward = np.zeros((Settings.NUM_PLOT_ITERATION, Settings.NUM_OF_DAYS))
@@ -252,31 +252,5 @@ ax[0].legend()
 ax[1].legend()
 ax[2].legend()
 plt.show()
+'''''
 
-
-'''
-for i in range(Settings.NUM_OF_DAYS):
-    pulled_arms = learner.act()
-    print(pulled_arms)
-    for j in range(Settings.DAILY_INTERACTIONS):
-        visited_products, num_bought_products, a = env.round(pulled_arms)
-        learner.updateHistory(pulled_arms, visited_products, num_bought_products)
-    learner.update(pulled_arms)
-
-
-print(learner.means)
-print(learner.widths)
-print((learner.widths + learner.means) * ((learner.prices*learner.num_product_sold) + learner.nearbyReward))
-fig, ax = plt.subplots(nrows=1,ncols=2)
-ax[0].plot(learner.average_reward, color='blue', label='UCB-1')
-ax[0].axhline(y=best_revenue, color='red', linestyle='--', label='Clairvoyant')
-ax[0].set_title('Average reward')
-ax[1].plot(np.cumsum(learner.average_reward), color='blue', label='UCB-1')
-ax[1].plot(np.cumsum(best_revenue_array), color='red', linestyle='--', label='Clairvoyant')
-ax[1].set_title('Cumulative reward')
-ax[0].legend()
-ax[1].legend()
-plt.show()
-
-
-'''
