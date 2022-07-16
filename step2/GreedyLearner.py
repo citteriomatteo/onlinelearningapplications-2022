@@ -202,8 +202,8 @@ class Greedy_Learner(Learner):
         local_max_found = [False for i in range(len(self.classes))]
         # iterate until the local maximum has been found for each class
         while not local_max_found == [True, True, True]:
-            print(learner.max_idxs)
-            print(learner.max_revenue)
+            print(self.max_idxs)
+            print(self.max_revenue)
 
             new_arms, new_revenue, chosen_class = self.pull_arm()
             if new_revenue > self.max_revenue[chosen_class]:
