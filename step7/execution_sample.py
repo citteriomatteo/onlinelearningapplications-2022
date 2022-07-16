@@ -14,11 +14,12 @@ from matplotlib import pyplot as plt
 
 '''
 Values for a good looking result:
-TS: 90 NUM_OF_DAYS, 200 DAILY_INTERACTIONS, 20 NUM_PLOT_ITERATION
-UCB: 90 NUM_OF_DAYS, 90 DAILY_INTERACTIONS, 20 NUM_PLOT_ITERATION
+TS: 90 NUM_OF_DAYS, 225 DAILY_INTERACTIONS, 20 NUM_PLOT_ITERATION
+UCB: 90 NUM_OF_DAYS, 100 DAILY_INTERACTIONS, 20 NUM_PLOT_ITERATION
 '''
 
 mode = 'Ucb'
+
 color = None
 if mode == "TS":
     color = 'green'
@@ -143,6 +144,8 @@ ax[1].set_title('Cumulative reward')
 ax[2].plot(mean_final_reward, color=color, label=mode)
 ax[2].fill_between(range(Settings.NUM_OF_DAYS), mean_final_reward - stdev_reward, mean_final_reward + stdev_reward, alpha=0.4)
 ax[2].axhline(y=best_revenue, color='grey', linestyle='--', label='Disaggregated Clairvoyant')
+ax[2].axvline(x=14, color='red', label="Split attempt")
+ax[2].axvline(x=28, color='red')
 ax[2].set_title('Reward')
 
 ax[0].legend()
