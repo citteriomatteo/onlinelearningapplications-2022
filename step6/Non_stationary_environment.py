@@ -69,14 +69,6 @@ new_conv_rates=[
       [0.4, 0.95, 0.35, 0.3]]
   ]
 
-"""""""""
-for i in range(1000):
-    env.round([0,1,2,2,3])
-    if(i==500):
-        env.setNewConvRates(new_conv_rates)
-        print(env.conversion_rates)
-"""""
-
 
 
 

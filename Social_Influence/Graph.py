@@ -90,56 +90,6 @@ class Graph:
                 return edge
         return self.dummy_edge
 
-    def compute_ucbs(self, primary, products_state):
-        theta = np.dot(np.linalg.inv(self.M), self.b)
-        ucbs = []
-        for i in range(len(self.nodes)):
-            # calculates the ucb of susceptible and connected (to the primary) nodes
-            if products_state[self.nodes[i].sequence_number] == 0 and primary.x[i] == 1:
-                x = np.atleast_2d(self.nodes[i].x).T
-                ucb = np.dot(theta.T, x) + self.c * np.sqrt(np.dot(x.T, np.dot(np.linalg.inv(self.M), x)))
-                ucbs.append(ucb[0][0])
-            else:
-                ucbs.append(-1)
-        return ucbs
-
-    def compute_ucbs_complete(self):
-        theta = np.dot(np.linalg.inv(self.M), self.b)
-        ucbs = []
-        for node in self.nodes:
-            x = np.atleast_2d(node.x).T
-            ucb = np.dot(theta.T, x) + self.c * np.sqrt(np.dot(x.T, np.dot(np.linalg.inv(self.M), x)))
-            ucbs.append(ucb[0][0])
-
-        return ucbs
-
-    def pull_arms(self, node1, products_state):
-        ucbs = self.compute_ucbs(primary=node1, products_state=products_state)
-        first = np.argmax(ucbs)
-
-        first_node = None
-        p1 = 0
-
-        if ucbs[first] != -1:
-            first_node = self.nodes[first]
-            e = self.search_edge_by_nodes(node1=node1, node2=first_node)
-            if e is not None:
-                p1 = e.probability
-
-        ucbs[first] = -1
-        second = np.argmax(ucbs)
-
-        second_node = None
-        p2 = 0
-
-        if ucbs[second] != -1:
-            second_node = self.nodes[second]
-            e = self.search_edge_by_nodes(node1=node1, node2=second_node)
-            if e is not None:
-                p2 = e.probability
-
-        return first_node, second_node, p1, p2
-
     def print_all(self):
         for edge in self.edges:
             print(edge.getNode1().name)

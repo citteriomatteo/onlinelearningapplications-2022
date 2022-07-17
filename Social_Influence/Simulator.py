@@ -9,16 +9,6 @@ class Simulator:
     def __init__(self, graph, alpha_ratios=None, num_product_sold=None, secondaries=None,
                  conversion_rates=None, mode='single_class'):
         self.graph = graph
-        '''
-        if mode == 'multi_class':
-            self.alpha_ratios = alpha_ratios
-            self.num_product_sold = num_product_sold
-            self.conversion_rates = conversion_rates
-        if mode == 'single_class':
-            self.alpha_ratios = alpha_ratios[0]
-            self.num_product_sold = num_product_sold[0]
-            self.conversion_rates = conversion_rates[0]
-        '''
         self.alpha_ratios = alpha_ratios
         self.num_product_sold = num_product_sold
         self.conversion_rates = conversion_rates
