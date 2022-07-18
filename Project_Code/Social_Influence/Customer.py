@@ -1,7 +1,7 @@
 import numpy as np
 import random
 
-import Settings
+from Project_Code import Settings
 
 
 class Customer:

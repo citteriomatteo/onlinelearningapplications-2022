@@ -1,8 +1,8 @@
 import numpy as np
 
-from Pricing.Clairvoyant import Clairvoyant
-from Pricing.pricing_environment import EnvironmentPricing
-from Social_Influence.Graph import Graph
+from Project_Code.Pricing.Clairvoyant import Clairvoyant
+from Project_Code.Pricing.pricing_environment import EnvironmentPricing
+from Project_Code.Social_Influence.Graph import Graph
 
 graph = Graph(mode="full", weights=True)
 env = EnvironmentPricing(4, graph, 1)

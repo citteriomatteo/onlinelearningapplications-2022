@@ -1,11 +1,5 @@
-import numpy as np
-from Pricing.Learner import *
-from Pricing.pricing_environment import EnvironmentPricing
-from Settings import LAMBDA
-from Social_Influence.Graph import Graph
-from Pricing.Clairvoyant import Clairvoyant
-import Settings
-from matplotlib import pyplot as plt
+from Project_Code.Pricing.Learner import *
+from Project_Code import Settings
 
 
 class TS(Learner):

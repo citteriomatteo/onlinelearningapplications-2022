@@ -1,90 +1,88 @@
-import random
-
-from Pricing.Learner import *
-from Pricing.pricing_environment import EnvironmentPricing
-from Social_Influence.Customer import Customer
-from Social_Influence.Graph import Graph
-from Social_Influence.Page import Page
+from Project_Code import Settings as Settings
+from Project_Code.Pricing.Learner import *
+from Project_Code.Social_Influence.Customer import Customer
+from Project_Code.Social_Influence.Page import Page
 
 
-class Clairvoyant(Learner):
-
-    def __init__(self, prices, conversion_rates, classes, secondaries, num_product_sold, graph, alpha_ratios):
-        """
-
-        :param prices: list of products and each product is a list of prices
-        :type prices: list of list
-        :param conversion_rates: matrix n_products X arms
-        :type conversion_rates: list of list
-        """
-
-        # num of arms (prices for each product)
+class Ucb(Learner):
+    def __init__(self, n_arms, prices, secondaries, num_product_sold, graph, alpha_ratios):
+        super().__init__(n_arms, len(prices))
         self.prices = prices
-        self.conversion_rates = conversion_rates
-        self.n_arms = prices.shape[1]
-        self.n_products = prices.shape[0]
-        self.classes = classes
-        self.secondaries = secondaries
-        self.num_product_sold = num_product_sold
+        self.pricesMeanPerProduct = np.mean(self.prices, 1)
+        self.means = np.zeros(prices.shape)
+        self.nearbyReward = np.zeros((self.n_products, self.n_arms))
+        self.widths = np.ones(prices.shape) * np.inf
         self.graph = graph
+        self.secondaries = secondaries
+        self.currentBestArms = np.zeros(len(prices))
+        self.num_product_sold = num_product_sold
+        self.n = np.zeros((self.n_products, self.n_arms))
         self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
         self.alpha_ratios = alpha_ratios
-        super().__init__(self.n_arms, self.n_products)
 
-    def revenue_given_arms(self, arms, chosen_class):
+    def reset(self):
+        self.__init__(self.n_arms, self.prices, self.graph)
+
+    def act(self):
         """
-        Returns the revenue of a given combination of arms of a given user class
-        :param arms: list of arms
-        :type arms: list
-        :param chosen_class: the user class given by the external of the method
+        :return: for each product returns the arm to pull based on which one gives the highest reward
+        :rtype: int
         """
-        nearby_reward = []
-        self.visit_probability_estimation = self.simulateTotalNearby(arms, chosen_class)
+        idx = np.argmax((self.widths + self.means) * ((self.prices*self.num_product_sold) + self.nearbyReward), axis=1)
+        return idx
+
+    def revenue_given_arms(self, arms):
+        means = [i[j] for i, j in zip(self.means, arms)]
+        prices = [i[j] for i, j in zip(self.prices, arms)]
+        num_product_sold = [i[j] for i, j in zip(self.num_product_sold, arms)]
+        nearby_reward = [i[j] for i, j in zip(self.nearbyReward, arms)]
+        return np.sum(np.multiply(self.alpha_ratios, np.multiply(means, np.multiply(prices, num_product_sold))+nearby_reward))
+
+    def updateHistory(self, arm_pulled, visited_products, num_bought_products):
+        super().update(arm_pulled, visited_products, num_bought_products)
+        current_prices = [i[j] for i, j in zip(self.prices,arm_pulled)]
+        current_reward = sum(num_bought_products*current_prices)
+        self.current_reward.append(current_reward)
+
+    def update(self, arm_pulled):
+        """
+        update mean and widths
+        :param arm_pulled: arm pulled for every product
+        :type arm_pulled: list
+        :return: none
+        :rtype: none
+        """
+
+        self.currentBestArms = arm_pulled
+        self.nearbyReward = np.zeros((self.n_products, self.n_arms))
+        self.visit_probability_estimation = self.simulateTotalNearby(arm_pulled)
+        self.average_reward.append(np.mean(self.current_reward[-Settings.DAILY_INTERACTIONS:]))
         for prod in range(self.n_products):
-            nearby_reward_temporary = 0
-            for temp in range(self.n_products):
-                nearby_reward_temporary += self.conversion_rates[chosen_class][prod][arms[prod]] * self.visit_probability_estimation[prod][
-                    temp] * self.conversion_rates[chosen_class][temp][arms[temp]] * self.num_product_sold[chosen_class][temp][
-                                                      arms[temp]] * self.prices[temp][
-                                                      arms[temp]]
-            nearby_reward.append(nearby_reward_temporary)
+            for price in range(self.n_arms):
+                for temp in range(self.n_products):
+                    self.nearbyReward[prod][price] += self.means[prod][price]*self.visit_probability_estimation[prod][temp]*self.means[temp][self.currentBestArms[temp]]*self.num_product_sold[temp][self.currentBestArms[temp]]*self.prices[temp][self.currentBestArms[temp]]
 
-        revenue = []
-        for i in range(self.n_products):
-            revenue.append(self.prices[i][arms[i]] * self.conversion_rates[chosen_class][i][arms[i]] * self.num_product_sold[chosen_class][i][arms[i]])
+        for prod in range(self.n_products):
+            self.means[prod][arm_pulled[prod]] = np.mean(self.rewards_per_arm[prod][arm_pulled[prod]])
+        for prod in range(self.n_products):
+            for arm in range(self.n_arms):
+                self.n[prod,arm] = len(self.rewards_per_arm[prod][arm])
+                if (self.n[prod,arm]) > 0:
+                    self.widths[prod][arm] = np.sqrt((2 * np.max(np.log(self.t)) / self.n[prod,arm]))
+                else:
+                    self.widths[prod][arm] = np.inf
 
-        average_total = 0
-        for i in range(5):
-            average_total += (revenue[i]+nearby_reward[i])*self.alpha_ratios[chosen_class][i+1]
-
-        return average_total
-
-    def disaggr_revenue_given_arms(self, arms, env):
-        """
-        Returns the revenue of a given combination of arms by weighting wrt all the classes (disaggregated average)
-        :param arms: list of arms
-        :type arms: list
-        :param env: environment, to access to all the classes
-        """
-        disaggr_average_total = 0
-        for c in range(len(env.classes)):
-            disaggr_average_total += env.classes["C" + str(c + 1)]["fraction"] \
-                                     * self.revenue_given_arms(arms=arms[c], chosen_class=c)
-
-        return disaggr_average_total
-
-
-    def simulateTotalNearby(self, selected_price, chosen_class):
+    def simulateTotalNearby(self, selected_price):
         times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
         for prod in range(self.n_products):
-            for iteration in range(364):
-                visited_products_ = self.simulateSingleNearby(selected_price, prod, chosen_class)
+            for iteration in range(Settings.NUM_MC_SIMULATIONS):
+                visited_products_ = self.simulateSingleNearby(selected_price, prod)
                 for j in range(len(visited_products_)):
                     if (visited_products_[j] == 1) and j != prod:
                         times_visited_from_starting_node[prod][j] += 1
-        return times_visited_from_starting_node / 364
+        return times_visited_from_starting_node / Settings.NUM_MC_SIMULATIONS
 
-    def simulateSingleNearby(self, selected_prices, starting_node, chosen_class):
+    def simulateSingleNearby(self, selected_prices, starting_node):
         customer = Customer(reservation_price=100, num_products=len(self.graph.nodes), graph=self.graph)
         num_prod = starting_node
         t = 0
@@ -99,7 +97,7 @@ class Clairvoyant(Learner):
         is_starting_node = True
 
         while len(customer.pages) > 0:
-            # action = Action(user=customer)
+            # action = Action(x=customer)
             # -----------------------------------------------------------------------------------
             # 2: CUSTOMERS' CHOICE BETWEEN OPENING A NEW TAB AND USING AN ALREADY OPENED ONE
             # randomized choice: choice of page 0-to-(|pages|-1) or creating a new page
@@ -113,7 +111,7 @@ class Clairvoyant(Learner):
             p3 = self.graph.search_edge_by_nodes(primary, third).probability if (
                     visited_products[third.sequence_number] == 0) else 0
             # action.set_page(page)
-            superare = self.conversion_rates[chosen_class][primary.sequence_number][selected_prices[primary.sequence_number]]
+            superare = self.means[primary.sequence_number][selected_prices[primary.sequence_number]]
             # -----------------------------------------------------------------------------------
             # 4: CUSTOMERS' CHOICE BETWEEN BUYING AND NOT BUYING THE PRIMARY PRODUCT
             if (is_starting_node) or (np.random.random() < superare):  # PRIMARY PRODUCT BOUGHT
@@ -160,3 +158,4 @@ class Clairvoyant(Learner):
             # action.compute_for_social_influence(graph=self.graph)
             t += 1
         return visited_products
+

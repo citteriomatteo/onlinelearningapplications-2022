@@ -2,8 +2,8 @@ import json
 
 import numpy as np
 
-from Social_Influence.Edge import Edge
-from Social_Influence.Product import Product
+from Project_Code.Social_Influence.Edge import Edge
+from Project_Code.Social_Influence.Product import Product
 
 
 class Graph:
@@ -32,9 +32,9 @@ class Graph:
         """
 
         if mode == "reduced":
-            path = "../json/graphs/reduced"
+            path = "../Project_Code/json/graphs/reduced"
         else:
-            path = "../json/graphs/full"
+            path = "../Project_Code/json/graphs/full"
         if weights:
             path += "_weights.json"
         else:

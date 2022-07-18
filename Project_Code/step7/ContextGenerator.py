@@ -1,12 +1,12 @@
 import copy
 import numpy as np
 
-import Settings
-from step7.ContextNode import ContextNode
-from step7.ContextualLearner import ContextualLearner
+from Project_Code import Settings
+from Project_Code.step7.ContextNode import ContextNode
+from Project_Code.step7.ContextualLearner import ContextualLearner
 
-from step7.UcbStep7 import Ucb
-from step7.TSstep7 import TS
+from Project_Code.step7.UcbStep7 import Ucb
+from Project_Code.step7.TSstep7 import TS
 
 
 class ContextGenerator:

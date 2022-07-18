@@ -1,8 +1,8 @@
 import numpy as np
 import random
 
-from Social_Influence.Customer import Customer
-from Social_Influence.Page import Page
+from Project_Code.Social_Influence.Customer import Customer
+from Project_Code.Social_Influence.Page import Page
 
 
 class Simulator:

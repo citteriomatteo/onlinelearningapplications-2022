@@ -1,10 +1,8 @@
 import random
 
-from Pricing.Learner import *
-from Pricing.pricing_environment import EnvironmentPricing
-from Social_Influence.Customer import Customer
-from Social_Influence.Graph import Graph
-from Social_Influence.Page import Page
+from Project_Code.Pricing.Learner import *
+from Project_Code.Social_Influence.Customer import Customer
+from Project_Code.Social_Influence.Page import Page
 
 
 class Greedy_Learner(Learner):

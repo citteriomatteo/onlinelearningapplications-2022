@@ -1,13 +1,12 @@
-from Pricing.pricing_environment import EnvironmentPricing
-from Social_Influence.Graph import Graph
-from Pricing.user_data_generator import *
-from Social_Influence.Simulator import *
-import Settings
+from Project_Code.Social_Influence.Graph import Graph
+from Project_Code.Pricing.user_data_generator import *
+from Project_Code.Social_Influence.Simulator import *
+from Project_Code import Settings
 
 import numpy as np
 
 class Non_stationary_environment:
-    def __init__(self, n_arms, graph, probabilities, resources="../json/dataUsers.json"):
+    def __init__(self, n_arms, graph, probabilities, resources="../Project_Code/json/dataUsers.json"):
         self.n_arms = n_arms
         self.probabilities = probabilities
 

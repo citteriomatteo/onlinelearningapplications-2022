@@ -1,15 +1,15 @@
 import numpy as np
 
-import Settings
-from Pricing.Clairvoyant import Clairvoyant
-from Pricing.pricing_environment import EnvironmentPricing
-from Social_Influence.Customer import Customer
-from Social_Influence.Graph import Graph
-from step7.ContextGenerator import ContextGenerator
-from step7.ContextNode import ContextNode
-from step7.ContextualLearner import ContextualLearner
-from step7.UcbStep7 import Ucb
-from step7.TSstep7 import TS
+from Project_Code import Settings
+from Project_Code.Pricing.Clairvoyant import Clairvoyant
+from Project_Code.Pricing.pricing_environment import EnvironmentPricing
+from Project_Code.Social_Influence.Customer import Customer
+from Project_Code.Social_Influence.Graph import Graph
+from Project_Code.step7.ContextGenerator import ContextGenerator
+from Project_Code.step7.ContextNode import ContextNode
+from Project_Code.step7.ContextualLearner import ContextualLearner
+from Project_Code.step7.UcbStep7 import Ucb
+from Project_Code.step7.TSstep7 import TS
 from matplotlib import pyplot as plt
 
 '''
@@ -107,7 +107,7 @@ print("FINAL CUMULATIVE REGRET: ")
 print(final_cumulative_regret)
 
 mean_cumulative_regret = np.mean(final_cumulative_regret, axis=0)
-stdev_regret = np.std(final_cumulative_regret, axis=0) / np.sqrt(Settings.NUM_OF_DAYS*Settings.DAILY_INTERACTIONS)
+stdev_regret = np.std(final_cumulative_regret, axis=0) / np.sqrt(Settings.NUM_OF_DAYS * Settings.DAILY_INTERACTIONS)
 print("MEAN: ")
 print(mean_cumulative_regret)
 

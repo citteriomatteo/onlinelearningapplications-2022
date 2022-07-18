@@ -1,34 +1,24 @@
-from matplotlib import pyplot as plt
-from Pricing.Learner import *
-from Pricing.pricing_environment import EnvironmentPricing
-from Settings import LAMBDA
-from Social_Influence.Graph import Graph
-from Social_Influence.Customer import Customer
-from Social_Influence.Page import Page
-import Settings
-from Pricing.Clairvoyant import Clairvoyant
+from Project_Code import Settings
+from Project_Code.Pricing.Learner import *
+from Project_Code.Social_Influence.Customer import Customer
+from Project_Code.Social_Influence.Page import Page
 
 
 class TS(Learner):
 
-    def __init__(self, n_arms, prices, secondaries, graph):
+    def __init__(self, n_arms, prices, secondaries, num_product_sold, graph,alpha_ratios):
         super().__init__(n_arms, len(prices))
         self.prices = prices
         self.beta_parameters = np.ones((self.n_products, n_arms, 2))
         self.graph = graph
         self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
-        self.secondaries = secondaries
-        self.num_product_sold_estimation = np.ones(prices.shape) * np.inf
+        self.secondaries = secondaries # da togliere?
+        self.num_product_sold = num_product_sold
         self.nearbyReward = np.zeros(prices.shape)
         self.currentBestArms = np.zeros(len(prices))
         self.visit_probability_estimation = np.zeros((self.n_products, self.n_products))
-
-    def isUcb(self):
-        return False
-
-    def isTS(self):
-        return True
+        self.alpha_ratios = alpha_ratios
 
     def act(self):
         """
@@ -40,23 +30,11 @@ class TS(Learner):
             # generate beta for every price of the current product
             beta = np.random.beta(self.beta_parameters[prod, :, 0], self.beta_parameters[prod, :, 1])
             # arm of the current product with highest expected reward
-            idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold_estimation[prod]) + self.nearbyReward[prod]))
+            idx[prod] = np.argmax(beta * ((self.prices[prod] * self.num_product_sold[prod]) + self.nearbyReward[prod]))
         return idx
 
-    def get_opt_arm_value(self):
-        """
-        :return: for every product choose the arm to pull
-        :rtype: list
-        """
-        idx = [0 for _ in range(self.n_products)]
-        for prod in range(self.n_products):
-            # generate beta for every price of the current product
-            beta = np.random.beta(self.beta_parameters[prod, :, 0], self.beta_parameters[prod, :, 1])
-            # arm of the current product with highest expected reward
-            idx[prod] = np.max(beta * ((self.prices[prod] * self.num_product_sold_estimation[prod]) + self.nearbyReward[prod]))
-        return idx
 
-    def updateHistory(self, pulled_arm, visited_products, num_bought_products, num_primary=None):
+    def updateHistory(self, pulled_arm, visited_products, num_bought_products):
         """
         update alpha and beta parameters
         :param pulled_arm: arm pulled for every product
@@ -78,7 +56,6 @@ class TS(Learner):
         current_prices = [i[j] for i, j in zip(self.prices, pulled_arm)]
         current_reward = sum(num_bought_products * current_prices)
         self.current_reward.append(current_reward)
-
 
     def simulateTotalNearby(self, selected_price):
         times_visited_from_starting_node = np.zeros((self.n_products, self.n_products))
@@ -121,7 +98,7 @@ class TS(Learner):
             # action.set_page(page)
             alpha = self.beta_parameters[primary.sequence_number][selected_prices[primary.sequence_number]][0]
             beta = self.beta_parameters[primary.sequence_number][selected_prices[primary.sequence_number]][1]
-            superare = alpha / (alpha + beta)
+            superare = alpha / (alpha+beta)
             # -----------------------------------------------------------------------------------
             # 4: CUSTOMERS' CHOICE BETWEEN BUYING AND NOT BUYING THE PRIMARY PRODUCT
             if (is_starting_node) or (np.random.random() < superare):  # PRIMARY PRODUCT BOUGHT
@@ -169,17 +146,27 @@ class TS(Learner):
             t += 1
         return visited_products
 
-    def update(self, pulled_arm):
-        self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + self.success_per_arm_batch[:, :]
-        self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] \
-                                        + self.pulled_per_arm_batch - self.success_per_arm_batch
-        for prod in range(self.n_products):
-            for price in range(self.n_arms):
-                if(self.boughts_per_arm[prod][price]!=0):
-                    self.num_product_sold_estimation[prod][price] = np.mean(self.boughts_per_arm[prod][price])
-                    if(self.num_product_sold_estimation[prod][price]==0):
-                        self.num_product_sold_estimation[prod][price] = np.inf
+    def revenue_given_arms(self, arms):
+        conversion_of_current = np.zeros(self.n_products)
+        conversion_of_current_alpha = [i[j][0] for i, j in zip(self.beta_parameters, arms)]
+        conversion_of_current_beta = [i[j][1] for i, j in zip(self.beta_parameters, arms)]
+        nearby_reward = [i[j] for i, j in zip(self.nearbyReward, arms)]
 
+        for prod in range(self.n_products):
+            conversion_of_current[prod] = conversion_of_current_alpha[prod] / (
+                    conversion_of_current_beta[prod] + conversion_of_current_alpha[prod])
+            
+        price_of_current = np.array([i[j] for i, j in zip(self.prices, arms)])
+        num_product_sold = [i[j] for i, j in zip(self.num_product_sold, arms)]
+        return np.sum(np.multiply(self.alpha_ratios, np.multiply(conversion_of_current, np.multiply(price_of_current, num_product_sold)) + nearby_reward))
+
+
+    def update(self, pulled_arm):
+
+        self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + \
+                                        self.success_per_arm_batch[:, :]
+        self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] + \
+                                        self.pulled_per_arm_batch - self.success_per_arm_batch
 
         self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
         self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
@@ -194,37 +181,13 @@ class TS(Learner):
                 for temp in range(self.n_products):
                     alpha_near = self.beta_parameters[temp][self.currentBestArms[temp]][0]
                     beta_near = self.beta_parameters[temp][self.currentBestArms[temp]][1]
-                    if (self.visit_probability_estimation[prod][temp] != 0)  or (self.num_product_sold_estimation[temp][self.currentBestArms[temp]] != np.inf):
-                        self.nearbyReward[prod][price] += (alpha_actual / (alpha_actual + beta_actual)) * \
+
+                    self.nearbyReward[prod][price] += (alpha_actual / (alpha_actual + beta_actual)) * \
                                                       self.visit_probability_estimation[prod][
                                                           temp] * (alpha_near / (alpha_near + beta_near)) * \
-                                                      self.num_product_sold_estimation[temp][
+                                                      self.num_product_sold[temp][
                                                           self.currentBestArms[temp]] * self.prices[temp][
                                                           self.currentBestArms[temp]]
-
-        self.nearbyReward[np.isnan(self.nearbyReward)] = 0
-
         self.average_reward.append(np.mean(self.current_reward[-Settings.DAILY_INTERACTIONS:]))
 
-    def update_for_all_arms(self):
 
-        self.beta_parameters[:, :, 0] = self.beta_parameters[:, :, 0] + self.success_per_arm_batch[:, :]
-        self.beta_parameters[:, :, 1] = self.beta_parameters[:, :, 1] \
-                                        + self.pulled_per_arm_batch - self.success_per_arm_batch
-        for prod in range(self.n_products):
-            for price in range(self.n_arms):
-                if(self.boughts_per_arm[prod][price]!=0):
-                    self.num_product_sold_estimation[prod][price] = np.mean(self.boughts_per_arm[prod][price])
-                    if(self.num_product_sold_estimation[prod][price]==0):
-                        self.num_product_sold_estimation[prod][price] = np.inf
-
-
-        self.pulled_per_arm_batch = np.zeros((self.n_products, self.n_arms))
-        self.success_per_arm_batch = np.zeros((self.n_products, self.n_arms))
-
-        self.nearbyReward = np.zeros((self.n_products, self.n_arms))
-        self.visit_probability_estimation = np.zeros((5, 5))
-
-        self.nearbyReward[np.isnan(self.nearbyReward)] = 0
-
-        self.average_reward.append(np.mean(self.current_reward[-Settings.DAILY_INTERACTIONS:]))

@@ -1,12 +1,6 @@
-from step6.Non_stationary_environment import Non_stationary_environment
-import numpy as np
-from Pricing.Learner import *
-from Pricing.pricing_environment import EnvironmentPricing
-from Social_Influence.Graph import Graph
-from Pricing.Clairvoyant import Clairvoyant
-import Settings
-from matplotlib import pyplot as plt
-from step6.Cumulative_sum import CUSUM
+from Project_Code.Pricing.Learner import *
+from Project_Code import Settings
+from Project_Code.step6.Cumulative_sum import CUSUM
 
 
 class Ucb_Change_detection(Learner):

@@ -1,12 +1,12 @@
 import numpy as np
 
-import Settings
-from Social_Influence.Simulator import Simulator
-from Pricing.user_data_generator import StandardDataGenerator
+from Project_Code import Settings
+from Project_Code.Social_Influence.Simulator import Simulator
+from Project_Code.Pricing.user_data_generator import StandardDataGenerator
 
 
 class EnvironmentPricing:
-    def __init__(self, n_arms, graph, probabilities, resources="../json/dataUsers.json"):
+    def __init__(self, n_arms, graph, probabilities, resources="../Project_Code/json/dataUsers.json"):
         self.n_arms = n_arms
         self.probabilities = probabilities
 
@@ -37,3 +37,4 @@ class EnvironmentPricing:
         visited_products, num_bought_products, num_primary = self.simulator.simulate(selected_prices=pulled_arm,
                                                                                      customer=customer)
         return visited_products, num_bought_products, num_primary
+
