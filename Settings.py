@@ -12,7 +12,7 @@ DAY_OF_ABRUPT_CHANGE = int(NUM_OF_DAYS/2)
 WINDOW_SIZE = int(np.sqrt(NUM_OF_DAYS))
 
 # Number of user interactions per day
-DAILY_INTERACTIONS = 100
+DAILY_INTERACTIONS = 70
 
 NUM_PLOT_ITERATION = 5
 

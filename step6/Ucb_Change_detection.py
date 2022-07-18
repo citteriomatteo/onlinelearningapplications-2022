@@ -159,3 +159,9 @@ class Ucb_Change_detection(Learner):
                                                       * conversion_of_current_best * price_of_current_best
                                                       * num_product_sold_of_current_best * self.means[node][price])
         return nearbyRewardsTable
+
+
+
+
+
+
